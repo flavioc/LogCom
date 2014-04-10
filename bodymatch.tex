@@ -1,0 +1,84 @@
+The soundness theorem will be proven into two main steps. First, we prove that performing a rule match at LLD is sound in relation to HLD and
+then we prove that the derivation of head terms in LLD is also sound.
+
+In order to prove the soundness of matching, we want to reconstitute a valid $\mz$in HLD from a valid $\mo$in LLD. However, in LLD
+we may fail during matching, therefore our body match lemma needs to handle unsuccessful matches. In order to be able to use induction, we
+must assume a matching proposition $\mo$that already contains some continuation frames in stack $C$ that is well-formed in relation to the rule's body $A$ and initial database.
+
+Our lemma also
+needs to apply to our continuation judgment $\contlld$, because when inverting some of the matching assumptions, we get a continuation
+proposition. Apart from an unsuccessful match, we deal with two situations during a successful match: (1) we succeed without needing to backtrack to a frame in stack $C$ or (2) we need to backtrack to a frame in $C$. The complete lemma is stated and proven below.
+
+\begin{lemma}[Body Match]\label{thm:body_match}
+   
+Consider a triplet $T = A; \Gamma; \Delta_{N}$ and a context $\Delta_{N} = \Delta_1, \Delta_2, \Xi$.
+
+If $\mo \Gamma; \Delta_1, \Delta_2; \Xi; \Omega; H; C; R \rightarrow \Xi'; \Delta'; \Gamma'$ is well-formed in relation to $T$ then either:
+
+\begin{enumerate}
+   \item Match fails: \\ $\cont \cdot; H; R; \Gamma \rightarrow \Xi'; \Delta'; \Gamma'$
+   \item Match succeeds: \\
+      $\mz \Gamma; \Delta_x \rightarrow A$ (where $\Delta_x \subseteq \Delta_N$) and one of the three sub-cases is true:
+      \begin{enumerate}
+         \item No backtracking to frames of stack $C$: \\ $\mo \Gamma; \Delta_1; \Xi, \Delta_2; \cdot; H; C'', C; R \rightarrow \Xi'; \Delta'; \Gamma'$ (well-formed in relation to $T$) and $\Delta_x = \Xi, \Delta_2$
+         \item With backtracking to a linear continuation frame: \\ $\exists f = (\Delta_a; \Delta_{b_1}, p_2, \Delta_{b_2}; p; \Omega_1, ..., \Omega_k; \Xi_1, ..., \Xi_m; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_n) \in C$ where $C = C', f, C''$ and $f$ turns into $f' = (\Delta_a, \Delta_{b_1}, p_2; \Delta_{b_2}; p; \Omega_1, ..., \Omega_k; \Xi_1, ..., \Xi_m; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_n)$ such that:
+         \begin{enumerate}
+            \item $\mo \Gamma; \Delta_c; \Xi_1, ..., \Xi_m, p_2, \Xi_c; \cdot; H; C''', f', C''; R \rightarrow \Xi'; \Delta'; \Gamma'$ (well-formed in relation to $T$) where $\Delta_c = (\Delta_1, \Delta_2, \Xi) - (\Xi_1, ..., \Xi_m, p_2, \Xi_c)$
+         \end{enumerate}
+         \item With backtracking to a persistent continuation frame: \\$\exists f = [\Gamma_1, p_2, \Gamma_2; \Delta_{c_1}, \Delta_{c_2}; \Xi_c; \bang p; \Omega_1, ..., \Omega_k; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_n] \in C$ where $C = C', f, C''$ and $f$ turns into $f' = [\Gamma_2; \Delta_{c_1}, \Delta_{c_2}; \Xi_1, ..., \Xi_m; \bang p; \Omega_1, ..., \Omega_k; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_n]$ such that:
+         \begin{enumerate}
+            \item $\mo \Gamma; \Delta_{c_1}; \Xi_1, ..., \Xi_m, \Delta_{c_2}; \cdot; H; C'', f', C''; R \rightarrow \Xi'; \Delta'; \Gamma'$ (well-formed in relation to $T$) where $\Delta_{c_1}, \Delta_{c_2} = \Delta_1, \Delta_2, \Xi - (\Xi_1, ..., \Xi_m)$
+         \end{enumerate}
+      \end{enumerate}
+\end{enumerate}
+
+If $\cont C; H; R; \Gamma \rightarrow \Xi'; \Delta'; \Gamma'$ and $C$ is well-formed in relation to $T$ then either:
+
+\begin{enumerate}
+   \item Match fails: \\ $\cont \cdot; H; R; \Gamma \rightarrow \Xi'; \Delta'; \Gamma'$
+   \item Match succeeds: \\ $\mz \Delta_x \rightarrow A$ (where $\Delta_x \subseteq \Delta_N$) where one sub-case is true:
+   \begin{enumerate}
+      \item With backtracking to a linear continuation frame: \\ $\exists f = (\Delta_a; \Delta_{b_1}, p_2, \Delta_{b_2}; \Xi_1, ..., \Xi_m; p; \Omega_1, ..., \Omega_k; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_n) \in C$ where $C = C', f, C''$ and $f$ turns into $f' = (\Delta_a, \Delta_{b_1}, p_2; \Delta_{b_2}; p; \Omega_1, ..., \Omega_k; \Xi_1, ..., \Xi_m; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_n)$ such that:
+      \begin{enumerate}
+         \item $\mo \Gamma; \Delta_c; \Xi_1, ..., \Xi_m, p_2, \Xi_c; \cdot; H; C''', f', C''; R \rightarrow \Xi'; \Delta'; \Gamma'$ (well-formed in relation to $T$) where $\Delta_c = (\Delta_1, \Delta_2, \Xi) - (\Xi_1, ..., \Xi_m, p_2, \Xi_c)$
+      \end{enumerate}
+      \item With backtracking to a persistent continuation frame: \\$\exists f = [\Gamma_1, p_2, \Gamma_2; \Delta_{c_1}, \Delta_{c_2}; \Xi_c; \bang p; \Omega_1, ..., \Omega_k; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_n] \in C$ where $C = C', f, C''$ and $f$ turns into $f' = [\Gamma_2; \Delta_{c_1}, \Delta_{c_2}; \Xi_1, ..., \Xi_m; \bang p; \Omega_1, ..., \Omega_k; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_n]$ such that:
+      \begin{enumerate}
+         \item $\mo \Gamma; \Delta_{c_1}; \Xi_1, ..., \Xi_m, \Delta_{c_2}; \cdot; H; C'', f', C''; R \rightarrow \Xi'; \Delta'; \Gamma'$ (well-formed in relation to $T$) where $\Delta_{c_1}, \Delta_{c_2} = \Delta_1, \Delta_2, \Xi - (\Xi_1, ..., \Xi_m)$
+      \end{enumerate}
+   \end{enumerate}
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+   Proof by mutual induction. In $\mo$on the size of $\Omega$ and on $\contlld$, first on the size of the second argument of the frame ($\Delta''$ and $\Gamma''$) and then on the size of the stack $C$. When inverting the assumption, the well-formedness of the stack and match are proven straightforwardly using the well-formedness of the assumption and the match equivalence theorem.
+\end{proof}
+
+For the induction hypothesis to be applicable in in Lemma~\ref{thm:body_match} there must be
+a relation between the judgments $\mo$and $\contlld$.
+We can define a lexicographic ordering $A \prec B$, meaning that proposition $A$ has a smaller proof than proposition $B$ (potentially $A$ is sub-proof of $B$),
+or alternatively, $A$ is "executed later" than $B$.
+The specific ordering is as follows:
+
+\begin{enumerate}
+   \item $\cont C; H; R; \Gamma \rightarrow \Xi'; \Delta'; \Gamma' \prec \cont C', C; H; R; \Gamma \rightarrow \Xi'; \Delta'; \Gamma'$\\
+   The continuation must use the top of the stack $C'$ before using $C$;
+   \item $\cont C', (\Delta, \Delta_1; \Delta_2; \Xi; p; \Omega; \Lambda; \Upsilon), C; H; R; \Gamma \rightarrow \Xi'; \Delta'; \Gamma'$\\
+   \hspace*{1cm}$\prec \cont C'', (\Delta; \Delta_1, \Delta_2; \Xi; p; \Omega; \Lambda; \Upsilon), C; H; R; \Gamma \rightarrow \Xi'; \Delta'; \Gamma'$\\
+   A continuation frame with more candidates has more steps to do than a frame with less candidates;
+   \item $\cont C', [\Gamma_1; \Delta; \Xi; \bang p; \Omega; \Lambda; \Upsilon], C; H; R; \Gamma \rightarrow \Xi'; \Delta'; \Gamma'$\\
+   \hspace*{1cm} $\prec \cont C'', [\Gamma_2, \Gamma_3; \Delta; \Xi; \bang p; \Omega; \Lambda; \Upsilon], C; H; R; \Gamma \rightarrow \Xi'; \Delta'; \Gamma'$\\
+      Same as the previous one;
+   \item $\cont C; H; R; \Gamma \rightarrow \Xi'; \Delta'; \Gamma' \prec \mo \Gamma; \Delta; \Xi; \Omega; H; C', C; R \rightarrow \Xi'; \Delta'; \Gamma'$\\
+   Same as (1);
+   \item $\mo \Gamma; \Delta; \Xi; \Omega; H; C; R \rightarrow \Xi'; \Delta'; \Gamma' \prec \cont C', C; H; R; \Gamma \rightarrow \Xi'; \Delta'; \Gamma'$\\
+   Same as the previous one;
+   \item $\mo \Gamma; \Delta''; \Xi''; \Omega'; H; C', C; R \rightarrow \Xi'; \Delta'; \Gamma' \prec \mo \Gamma; \Delta; \Xi; \Omega; H; C; R \rightarrow \Xi'; \Delta'; \Gamma'$ as long as $\Omega' \prec \Omega$\\
+   Adding continuation frames to the stack makes the proof smaller as long as $\Omega$ is also smaller; 
+   \item $\mo \Gamma; \Delta; \Xi; \Omega; H; C', (\Delta, \Delta_1; \Delta_2; \Xi; p; \Omega; \Lambda; \Upsilon), C; R \rightarrow \Xi'; \Delta'$\\
+   \hspace*{1cm} $\prec \mo \Gamma; \Delta''; \Xi''; \Omega'; C'', (\Delta; \Delta_1, \Delta_2; \Xi; p; \Omega; \Lambda; \Upsilon), C; R \rightarrow \Xi'; \Delta'; \Gamma'$\\
+   Same as (2);
+   \item $\mo \Gamma; \Delta; \Xi; \Omega; H; C', [\Gamma_1; \Delta; \Xi; \bang p; \Omega; \Lambda; \Upsilon], C; R \rightarrow \Xi'; \Delta'; \Gamma'$\\
+   \hspace*{1cm} $\prec \mo \Gamma; \Delta''; \Xi''; \Omega'; C'', [\Gamma_2, \Gamma_3; \Delta; \Xi; \bang p; \Omega; \Lambda; \Upsilon], C; R \rightarrow \Xi'; \Delta'; \Gamma'$\\
+   Same as (3).
+\end{enumerate}

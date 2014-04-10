@@ -1,0 +1,43 @@
+The first definition defines the equality between two multi-sets of terms.
+Two multi-sets $A$ and $B$ are equal, $\feq{A}{B}$, when they have the same constituent atoms.
+
+{\small
+\[
+\infer[\equiv p]
+{\feq{p, A}{p, B}}
+{\feq{A}{B}}
+\tab
+\infer[\equiv \bang p]
+{\feq{\bang p, A}{\bang p, B}}
+{\feq{A}{B}}
+\tab
+\infer[\equiv 1~L]
+{\feq{1, A}{B}}
+{\feq{A}{B}}
+\tab
+\infer[\equiv 1~R]
+{\feq{A}{1, B}}
+{\feq{A}{B}}
+\]
+
+\[
+\infer[\equiv \cdot]
+{\feq{\cdot}{\cdot}}
+{}
+\tab
+\infer[\equiv \otimes~L]
+{\feq{A \otimes B, C}{D}}
+{\feq{A, B, C}{D}}
+\tab
+\infer[\equiv \otimes~R]
+{\feq{A}{B \otimes C, D}}
+{\feq{A}{B, C, D}}
+\]
+}
+
+\begin{theorem}[Match Equivalence]
+If two multi-sets are equivalent, $\feq{A_1, ..., A_n}{B_1, ..., B_m}$, and we can match $A_1 \otimes ... \otimes A_n$ in HLD such that $\mz \Gamma ; \Delta \rightarrow A_1 \otimes ... \otimes A_n$ then $\mz \Gamma; \Delta \rightarrow B_1 \otimes ... \otimes B_m$ is also true.
+\end{theorem}
+\begin{proof}
+By straightforward induction on the first assumption.
+\end{proof}

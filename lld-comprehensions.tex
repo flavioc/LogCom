@@ -1,0 +1,327 @@
+
+\subsection{Comprehension Match}
+
+The matching process for comprehensions is similar to the process used for matching the body of the rule presented
+in Section~\ref{sec:body_match}, however we use two continuation stacks, $C$ and $P$. In $P$, we put all the initial persistent frames
+and in $C$ we put the first linear frame and then everything else.
+
+To apply as many comprehensions as the database allows, we
+reuse the continuation stacks to backtrack and try all the possible combinations available.
+However, in order to reuse the stack, we need to update it by removing all the frames pushed after the first linear continuation frame.
+If we tried to use those frames, we would assumed that the linear facts used by the other frames were still in the database, but that
+is not true because they have been consumed during the first application of the comprehension.
+For example, if the body is $\bang \mathtt{a(X)} \otimes \mathtt{b(X)} \otimes \mathtt{c(X)}$ and the continuation stack has three frames (one per fact), we cannot backtrack to the frame of $\mathtt{c(X)}$
+since, at that point, the matching process was assuming that the previous \texttt{b(X)} linear fact was still available.
+Moreover, we also need to remove the consumed linear facts from the frames of \texttt{b(X)} and $\bang$\texttt{a(X)} in order to make the stack fully consistent with the new database. We will see later on how to do that.
+
+The full match judgment has the form
+$\mc \Gamma; \Delta; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi; \Omega; C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'$, where:
+
+\begin{enumerate}
+   \item[$\Delta$] multi-set of linear facts remaining up to this point in the matching process;
+   \item[$\Xi_N$] multi-set of linear facts used during the matching process of the body of the rule and all the previous comprehensions;
+   \item[$\Gamma_{N1}$] set of persistent facts derived up to this point in the head of the rule;
+   \item[$\Delta_{N1}$] multi-set of linear facts derived up to this point in the head of the rule;
+   \item[$\Xi$] multi-set of linear facts consumed up to this point;
+   \item[$\Omega$] ordered list of terms that need to be matched for the comprehension to be applied;
+   \item[$C$] continuation stack that contains both linear and persistent frames. The first frame must be linear;
+   \item[$P$] initial part of the continuation stack with only persistent frames;
+   \item[$AB$] comprehension $A \com B$ that is being matched;
+   \item[$\Omega_N$] ordered list of remaining terms of the head of the rule to be derived;
+   \item[$\Delta_N$] multi-set of linear facts that were still available after matching the body of the rule and all the previous comprehensions. Note that $\Delta, \Xi = \Delta_N$.
+\end{enumerate}
+
+\subsubsection{Linear continuation frames}
+
+The following five inference rules deal with the case when there is a linear fact expression in the body of the comprehension.
+
+{\scriptsize
+\[
+\infer[\mc p~\m{first}]
+{\mc \Gamma; \Delta, p_1, \Delta''; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \cdot; p, \Omega; \cdot; \cdot; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+{p_1, \Delta'' \prec p & \mc \Gamma; \Delta, \Delta''; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi, p_1; \Omega; (\Delta, p_1; \Delta''; \cdot; p; \Omega; \cdot; \cdot); \cdot; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+
+\[
+\infer[\mc p~\m{on}~q]
+{\mc \Gamma; \Delta, p_1, \Delta''; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi; p, \Omega; C_1, C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+{p_1, \Delta'' \prec p & \begin{split}C_1 =& (\Delta_{old}; \Delta'_{old}; \Xi_{old}; q; \Omega_{old}; \Lambda; \Upsilon) \\ \mc &\Gamma; \Delta, \Delta''; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi, p_1; \Omega; (\Delta, p_1; \Delta''; \Xi; p; \Omega; q, \Lambda; \Upsilon), C_1, C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'\end{split}}
+\]
+
+
+\[
+\infer[\mc p~\m{on}~\bang q~C]
+{\mc \Gamma; \Delta, p_1, \Delta''; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi; p, \Omega; C_1, C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+{p_1, \Delta'' \prec p & \begin{split}C_1 &= [\Gamma_{old}; \Delta_{old}; \Xi_{old}; q; \Omega_{old}; \Lambda; \Upsilon] \\ \mc &\Gamma; \Delta, \Delta''; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi, p_1; \Omega; (\Delta, p_1; \Delta''; \Xi; p; \Omega; \Lambda; q, \Upsilon), C_1, C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma' \end{split}}
+\]
+
+
+\[
+\infer[\mc p~\m{on}~\bang q~P]
+{\mc \Gamma; \Delta, p_1, \Delta''; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \cdot; p, \Omega; \cdot; P_1, P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+{p_1, \Delta'' \prec p & \begin{split}\\ P_1 &= [\Gamma_{old}; \Delta_N; \cdot; q; \Omega_{old}; \cdot; \Upsilon]\\ \Delta_N &= \Delta, p_1, \Delta'' \\ \mc &\Gamma; \Delta, \Delta''; \Xi_N; \Gamma_{N1}; \Delta_{N1}; p_1; \Omega; (\Delta, p_1; \Delta''; \cdot; p; \Omega; \cdot; q, \Upsilon); P_1, P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'\end{split}}
+\]
+
+
+\[
+\infer[\mc p~\m{fail}]
+{\mc \Gamma; \Delta; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi; p, \Omega; C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+{\Delta \npreceq p & \contc \Gamma; \Delta_N; \Xi_N; \Gamma_{N1}; \Delta_{N1}; C; P; AB; \Omega_N \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+}
+
+\subsubsection{Persistent continuation frames}
+
+If we find a persistent fact expression, the inference rules are similar to the previous ones.
+
+{\scriptsize
+\[
+\infer[\mc \bang p~\m{first}]
+{\mc \Gamma, p_1, \Gamma''; \Delta_N; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \cdot; \bang p, \Omega; \cdot; \cdot; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+{p_1, \Gamma'' \prec \bang p & \mc \Gamma, p_1, \Gamma''; \Delta_N; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \cdot; \Omega; \cdot; [\Gamma''; \Delta_N; \cdot; \bang p; \cdot; \Omega; \cdot; \cdot]; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+
+\[
+\infer[\mc \bang p~\m{on}~\bang q~P]
+{\mc \Gamma, p_1, \Gamma''; \Delta_N; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \cdot; \bang p, \Omega; \cdot; P_1, P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+{p_1, \Gamma'' \prec \bang p & \begin{split}P_1 &= [\Gamma_{old}; \Delta_N; \cdot; \bang q; \Omega_{old}; \cdot; \Upsilon] \\ \mc &\Gamma, p_1, \Gamma''; \Delta_N; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \cdot; \Omega; [\Gamma''; \Delta_N; \cdot; \bang p; \cdot; \Omega; \cdot; q, \Upsilon], P_1, P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'\end{split}}
+\]
+
+
+\[
+\infer[\mc \bang p~\m{on}~\bang q~C]
+{\mc \Gamma, p_1, \Gamma''; \Delta; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi; \bang p, \Omega; C_1, C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+{p_1, \Gamma'' \prec \bang p & \begin{split}C_1 &= [\Gamma_{old}; \Delta_{old}; \Xi_{old}; \bang q; \Omega_{old}; \Lambda; \Upsilon] \\ \mc & \Gamma, p_1, \Gamma''; \Delta; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi; \Omega; [\Gamma''; \Delta; \Xi; \bang p; \cdot; \Omega; \Lambda; q, \Upsilon], C_1, C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma' \end{split}}
+\]
+
+
+\[
+\infer[\mc \bang p~\m{on}~q~C]
+{\mc \Gamma, p_1, \Gamma''; \Delta; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi; \bang p, \Omega; C_1, C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+{p_1, \Gamma'' \prec \bang p & \begin{split}C_1 &= (\Delta_{old}; \Delta'_{old}; \Xi_{old}; q; \Omega_{old}; \Lambda; \Upsilon) \\ \mc &\Gamma, p_1, \Gamma''; \Delta; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi; \Omega; [\Gamma''; \Delta; \Xi; \bang p; \cdot; \Omega; \Lambda, q; \Upsilon], C_1, C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'\end{split}}
+\]
+
+\[
+\infer[\mc \bang p~\m{fail}]
+{\mc \Gamma; \Delta; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi; \bang p, \Omega; C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta; \Gamma'}
+{\Gamma \npreceq \bang p & \contc \Gamma; \Delta_N; \Xi_N; \Gamma_{N1}; \Delta_{N1}; C; P; AB; \Omega_N \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+}
+
+\subsubsection{Deconstruct body}
+
+The inference rules for deconstructing the body of the comprehension, including the connectives $\otimes$ and $1$, are shown next.
+
+{\scriptsize
+\[
+\infer[\mc \otimes]
+{\mc \Delta; \Xi_N; \Delta_{N1}; \Xi; X \otimes Y, \Omega; C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'}
+{\mc \Delta; \Xi_N; \Delta_{N1}; \Xi; X, Y, \Omega; C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'}
+\]
+
+\[
+\infer[\mc 1]
+{\mc \Delta; \Xi_N; \Delta_{N1}; \Xi; 1, \Omega; C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'}
+{\mc \Delta; \Xi_N; \Delta_{N1}; \Xi; \Omega; C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'}
+\]
+}
+
+\subsubsection{Successful match}
+
+Finally, when there is no more body terms to process, we initiate the process of the updating the continuation stack (with $\dall$) followed
+by deriving the head of the comprehension.
+
+{\scriptsize
+\[
+\infer[\mc \m{end}]
+{\mc \Gamma; \Delta; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi; \cdot; C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+{\dall \Gamma; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi; C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+}
+
+\subsection{Continuation Stack Update}
+
+As we said before, to update the continuation stacks, we need remove to all the frames except the first linear frame and remove the consumed linear facts from the remaining frames so that they are still valid for the next application of the comprehension.
+The judgment that updates the stack has the form $\dall \Gamma; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi; C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'$, where:
+
+\begin{enumerate}
+   \item[$\Xi_N$] multi-set of linear facts used during the matching process of the body of the rule and all the previous comprehensions;
+   \item[$\Gamma_{N1}$] set of persistent facts derived by the head of the rule and all the previous comprehensions;
+   \item[$\Delta_{N1}$] multi-set of linear facts derived by the head of the rule and all the previous comprehensions;
+   \item[$\Xi$] multi-set of linear facts consumed by the previous application of the comprehension;
+   \item[$C, P$] continuation stacks for the comprehension;
+   \item[$AB$] comprehension $A \com B$ that is being computed;
+   \item[$\Omega_N$] ordered list of remaining terms of the head of the rule to be derived;
+   \item[$\Delta_N$] multi-set of linear facts that were still available after matching the body of the rule and all the previous comprehensions.
+\end{enumerate}
+
+\subsubsection{Remove linear continuation frames}
+
+To remove all linear continuation frames except the first one, we simply go through all the frames in the stack $C$ with $\dall \m{more}$
+until only one frame remains. This frame is then updated using $\dall \m{end~linear}$ by removing the linear facts $\Xi$ consumed
+during the last application of the comprehension.
+
+{\footnotesize
+\[
+\infer[\dall \m{end~linear}]
+{\dall \Gamma; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi; (\Delta_x; \Delta''; \cdot; p; \Omega; \cdot; \Upsilon); P;  AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+{\begin{split}\strans &\Xi; P; P' \\ \dc \Gamma; \Xi_N, \Xi; \Gamma_{N1}; \Delta_{N1}; (\Delta_x - \Xi; \Delta'' - \Xi; \cdot;& p; \Omega; \cdot; \Upsilon) ; P' ; AB; \Omega_N; (\Delta_N - \Xi) \rightarrow \Xi'; \Delta'; \Gamma'\end{split}}
+\]
+
+\[
+\infer[\dall \m{more}]
+{\dall \Gamma; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi; \_, X, C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+{\dall \Gamma; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi; X, C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+
+\[
+\infer[\dall \m{end~empty}]
+{\dall \Gamma; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi; \cdot; P;  AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+{\begin{split}\strans &\Xi; P; P' \\ \dc \Gamma; \Xi_N, \Xi; \Gamma_{N1}; \Delta_{N1}; \cdot ; P' ; &AB; \Omega_N; (\Delta_N - \Xi) \rightarrow \Xi'; \Delta'; \Gamma'\end{split}}
+\]
+}
+
+\subsubsection{Transform persistent continuation frames}
+
+Finally, we also need to subtract the consumed facts in $\Xi$ from the second argument of every persistent continuation frame.
+We have an auxiliary judgment $\strans \Xi; P; P'$ where $\Xi$ is the multi-set of consumed linear facts, $P$ is the persistent continuation
+stack and $P'$ is the stack $P$ after the update.
+
+{\footnotesize
+\[
+\infer[\strans]
+{\strans \Xi; [\Gamma'; \Delta_N; \cdot; \bang p; \Omega; \cdot; \Upsilon], P; [\Gamma'; \Delta_N - \Xi; \cdot; \bang p, \Omega; \cdot; \Upsilon], P'}
+{\strans \Xi; P; P'}
+\tab
+\infer[\strans \m{end}]
+{\strans \Xi; \cdot; \cdot}
+{\strans \Xi; \cdot; \cdot}
+\]
+}
+
+\subsection{Comprehension Continuation}
+
+If the comprehension match fails, we need to backtrack to the previous frame and restore the matching process at that point. The judgment used to backtrack is similar to the one presented in Section~\ref{sec:match_cont} and has the form $\contc \Gamma; \Delta_N; \Xi_N; \Delta_{N1}; C; P; AB; \Omega_N \rightarrow \Xi'; \Delta'; \Gamma'$, where:
+
+\begin{enumerate}
+   \item[$\Delta_N$] multi-set of linear facts still available after matching the body of the rule;
+   \item[$\Xi_N$] multi-set of linear facts used to match the body of the rule and all the previous comprehensions;
+   \item[$\Gamma_{N1}$] set of persistent facts derived by the head of the rule and all the previous comprehensions;
+   \item[$\Delta_{N1}$] multi-set of linear facts derived by the head of the rule and all the previous comprehensions;
+   \item[$C, P$] continuation stacks;
+   \item[$AB$] comprehension $A \com B$ that is executing;
+   \item[$\Omega_N$] ordered list of remaining terms of the head of the rule to be derived.
+\end{enumerate}
+
+\subsubsection{Using C stack}
+
+The following 4 inference rules use the $C$ stack, the stack where the first continuation frame is linear, to perform backtracking.
+
+{\small
+\[
+\infer[\contc \m{next}~C~p]
+{\contc \Gamma; \Delta_N; \Xi_N; \Gamma_{N1}; \Delta_{N1}; (\Delta; p_1, \Delta''; \Xi; p; \Omega; \Lambda; \Upsilon), C; P; AB; \Omega_N \rightarrow \Xi'; \Delta'; \Gamma'}
+{\mc \Gamma; \Delta; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi; \Omega; (\Delta, p_1; \Delta''; \Xi; p; \Omega; \Lambda; \Upsilon), C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+
+\[
+\infer[\contc \m{next}~C~\bang p]
+{\contc \Gamma; \Delta_N; \Xi_N; \Gamma_{N1}; \Delta_{N1}; [p_1, \Gamma'; \Delta; \Xi; \bang p; \Omega; \Lambda; \Upsilon], C; P; AB; \Omega_N \rightarrow \Xi'; \Delta'; \Gamma'}
+{\mc \Gamma; \Delta; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi; \Omega; [\Gamma'; \Delta; \Xi; \bang p; \Omega; \Lambda; \Upsilon], C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+
+\[
+\infer[\contc \m{next}~C~\m{empty}~p]
+{\contc \Gamma; \Delta_N; \Xi_N; \Gamma_{N1}; \Delta_{N1}; (\Delta; \cdot; \Xi; p; \Omega; \Lambda; \Upsilon), C; P; AB; \Omega_N \rightarrow \Xi'; \Delta'; \Gamma'}
+{\contc \Gamma; \Delta_N; \Xi_N; \Gamma_{N1}; \Delta_{N1}; C; P; AB; \Omega_N \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+
+\[
+\infer[\contc \m{next}~C~\m{empty}~\bang p]
+{\contc \Gamma; \Delta_N; \Xi_N; \Gamma_{N1}; \Delta_{N1}; [\cdot; \Delta; \Xi; \bang p; \Omega; \Lambda; \Upsilon], C; P; AB; \Omega_N \rightarrow \Xi'; \Delta'; \Gamma'}
+{\contc \Gamma; \Delta_N; \Xi_N; \Gamma_{N1}; \Delta_{N1}; C; P; AB; \Omega_N \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+}
+
+\subsubsection{Using P stack}
+
+The following 2 inference rules use the $P$ stack instead, the stack where all continuation frames are persistent.
+
+{\small
+\[
+\infer[\contc \m{next}~P~\bang p]
+{\contc \Gamma; \Delta_N; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \cdot; [p_1, \Gamma'; \Delta_N; \cdot; \bang p; \Omega; \cdot; \Upsilon], P; AB; \Omega_N \rightarrow \Xi'; \Delta'; \Gamma'}
+{\mc \Gamma; \Delta_N; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \cdot; \Omega; \cdot; [\Gamma'; \Delta_N; \cdot; \bang p; \Omega; \cdot; \Upsilon], P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+
+\[
+\infer[\contc \m{next}~P~\m{empty}~\bang p]
+{\contc \Gamma; \Delta_N; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \cdot; [\cdot; \Delta_N; \cdot; \bang p; \Omega; \cdot; \Upsilon], P; AB; \Omega_N \rightarrow \Xi'; \Delta'; \Gamma'}
+{\contc \Gamma; \Delta_N; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \cdot; P; AB; \Omega_N \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+}
+
+\subsubsection{Comprehension done}
+
+If both the $C$ and $P$ stacks are empty, we are unable to backtrack and thus unable to continue deriving the comprehension.
+We next derive the remaining head terms in $\Omega$.
+
+{\small
+\[
+\infer[\contc \m{end}]
+{\contc \Gamma; \Delta_N; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \cdot; \cdot; AB; \Omega \rightarrow \Xi'; \Delta'; \Gamma'}
+{\done \Gamma; \Delta_N; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Omega \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+}
+
+\subsection{Comprehension Derivation}
+
+After updating the continuation stacks, we then derive the head of the comprehension. The judgment has the form $\dc \Gamma; \Xi; \Gamma_1; \Delta_1; \Omega; C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'$, where:
+
+\begin{enumerate}
+   \item[$\Xi$] multi-set of linear facts consumed both by the body of the rule and previous comprehension applications;
+   \item[$\Gamma_1$] set of persistent facts derived by the head of the rule, previous comprehensions and current derivation;
+   \item[$\Delta_1$] multi-set of linear facts derived by the head of the rule, previous comprehensions and current derivation;
+   \item[$\Omega$] ordered list of terms to derive;
+   \item[$C, P$] new continuation stacks;
+   \item[$AB$] comprehension $A \com B$ that is being executed;
+   \item[$\Omega_N$] ordered list of remaining terms of the head of the rule to be derived;
+   \item[$\Delta_N$] multi-set of remaining linear facts that can be used for the next comprehension applications.
+\end{enumerate}
+
+{\footnotesize
+\[
+\infer[\dc p]
+{\dc \Gamma; \Xi; \Gamma_1; \Delta_1; p, \Omega; C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+{\dc \Gamma; \Xi; \Gamma_1; \Delta_1, p; \Omega; C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+
+\[
+\infer[\dc \bang p]
+{\dc \Gamma; \Xi; \Gamma_1; \Delta_1; \bang p, \Omega; C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+{\dc \Gamma; \Xi; \Gamma_1, p; \Delta_1; \Omega; C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+
+\[
+\infer[\dc \otimes]
+{\dc \Gamma; \Xi; \Gamma_1; \Delta_1; A \otimes B, \Omega; C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta';\Gamma'}
+{\dc \Gamma; \Xi; \Gamma_1; \Delta_1; A, B, \Omega; C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta';\Gamma'}
+\]
+
+\[
+\infer[\dc 1]
+{\dc \Gamma; \Xi; \Gamma_1; \Delta_1; 1, \Omega; C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta';\Gamma'}
+{\dc \Gamma; \Xi; \Gamma_1; \Delta_1; \Omega; C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta';\Gamma'}
+\]
+}
+
+The last derivation rule is activated whenever the $\Omega$ is empty. We use the $\contc$judgment to reuse the continuation stack
+and try the next combination for the comprehension.
+
+{\footnotesize
+\[
+\infer[\dc \m{end}]
+{\dc \Gamma; \Xi; \Gamma_1; \Delta_1; \cdot; C; P; AB; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'}
+{\contc \Gamma; \Delta_N; \Xi; \Gamma_1; \Delta_1; C; P; AB; \Omega_N \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+}

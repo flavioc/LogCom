@@ -1,0 +1,171 @@
+
+
+In this section, we are going to present the high level dynamic semantics of LM. Both the high level and the low
+level semantics formalize the mechanism of deriving rules and are presented as a sequence of steps, where each step
+is a single rule application at the node level. Node communication happens in between execution steps.
+Each execution step receives the following as inputs: (1) the node's persistent and linear database and (2) the program's rules.
+A step returns the following as outputs: (1) the consumed linear facts, (2) the derived linear facts and
+(3) the derived persistent facts.
+
+The high level dynamic semantics (HLD) present a simplified overview of the dynamics of the language that are
+closer to the formalism of linear logic present in Fig.~\ref{linear_logic} than a concrete implementation.
+Note that both the high level and low level dynamic semantics do not model the use of variable bindings when matching
+facts from the database. Unification and variable binding are already well understood in the
+literature~\cite{Baader:1994:UT:185705.185711} and they are not necessary for a good understanding of the system.
+
+Starting from the linear logic fragment presented earlier, we consider $\Gamma$ and $\Delta$ the node's database.
+Context $\Gamma$ contains atomic formulas representing persistent facts while context $\Delta$ contains atomic formulas
+representing linear facts.
+We assume that the rules of the program are persistent linear implications with the form
+$\bang (A \lolli B)$ that can be apply as many times as needed. However, we do not put the rules in the $\Gamma$
+context but in a separate context $\Phi$.
+
+The main idea of HLD is to ignore the right hand side of the sequent calculus
+and use inversion on the $\Delta$ and $\Gamma$ contexts so that we only have atomic formulas.
+To apply rules we use chaining by focusing on one of the derivation rules in $\Phi$. Note
+that during the focusing process we assume that all the atomic formulas (facts) are positive thus the chaining
+becomes a forward chaining process.
+
+\subsection{Step}\label{step_hld}
+
+The step judgment picks a node $i$ to execute and then updates all the nodes databases accordingly. We assume the existence of $n$
+nodes in the program and partition the global linear context $\Delta$ into $\Delta_1, ..., \Delta_n$ and the global persistent
+context $\Gamma$ into $\Gamma_1, ..., \Gamma_n$. After deriving a specific rule at node $i$, the newly derived facts on the right
+hand side of the $\doz$judgment may contain facts that need to be sent to other nodes. We assume an automatic partition of derived
+facts by analysis of the first argument of each fact.
+
+\[
+\infer[\stepz]
+{\stepz [\Gamma_1 .. \mid \Gamma_i .. \mid \Gamma_n]; [\Delta_1 .. \mid \Delta_i .. \mid \Delta_n]; \Phi \Longrightarrow [\Gamma_1, \Gamma'_1 .. \mid \Gamma_i, \Gamma'_i .. \mid \Gamma_n, \Gamma'_n]; [\Delta_1, \Delta'_1 .. \mid (\Delta_i - \Xi'), \Delta'_i .. \mid \Delta_n, \Delta'_n]}
+{\doz \Gamma_i; \Delta_i; \Phi \rightarrow \Xi'; \Delta'_1, ..., \Delta'_n; \Gamma'_1, ..., \Gamma'_n}
+\]
+
+\subsection{Application}
+
+To apply a rule we use the judgment $\doz \Gamma; \Delta; \Phi \rightarrow \Xi'; \Delta'; \Gamma'$.
+The input contexts are the following: $\Gamma$, the context of persistent facts; $\Delta$, the context of linear facts; and $\Phi$, the program's rules.
+The output contexts are the following: $\Xi'$, the set of consumed linear
+resources; $\Delta'$, the set of derived linear facts; and $\Gamma'$, the set of derived persistent
+facts. Except $\Phi$, $\Delta'$ and $\Gamma'$, both input and output contexts are directly related to the node that is
+executing. The context $\Delta'$ may contain facts that need to be sent to other nodes. 
+Note that for the HLD semantics there is no concept of rule priority, so we pick a rule
+in a non-deterministic fashion.
+
+The judgment $\az \Gamma ; \Delta ; A \lolli B \rightarrow \Xi'; \Delta'; \Gamma'$ will attempt to apply
+the derivation rule $A \lolli B$. To do this, it splits the $\Delta$ context into $\Delta_1$ and $\Delta_2$, namely the
+set of linear resources consumed to match the body of the rule ($\Delta_1$) and the remaining linear facts ($\Delta_2$),
+respectively. Again, the set of resources needed to match the body of the rule is guessed. The low level dynamic semantics will
+deterministically compute $\Delta_1$.
+
+\[
+\infer[\doz \m{rule}]
+{\doz \Gamma ; \Delta ; R, \Phi \rightarrow \Xi' ; \Delta' ; \Gamma'}
+{\az \Gamma ; \Delta ; R \rightarrow \Xi' ; \Delta' ; \Gamma'}
+\]
+
+\[
+\infer[\az \m{rule}]
+{\az \Gamma ; \Delta_1, \Delta_2 ; A \lolli B \rightarrow \Xi' ; \Delta' ; \Gamma'}
+{\mz \Gamma ; \Delta_1 \rightarrow A & \dz \Gamma ; \Delta_2; \Delta_1; \cdot ; \cdot ; B \rightarrow \Xi' ; \Delta' ; \Gamma'}
+\]
+
+\subsection{Match}
+
+The $\mz \Gamma ; \Delta \rightarrow C$ judgment essentially uses the right ($R$) rules of the original
+linear logic fragment in order to match all facts using $\Gamma$ and $\Delta$. We must consume all the linear facts in
+the multi-set $\Delta$ when matching $C$. The context $\Gamma$ may be used to match persistent terms in $C$ but such
+facts are never consumed since they are persistent.
+
+\[
+\infer[\mz 1]
+{\mz \Gamma; \cdot \rightarrow 1}
+{}
+\tab
+\infer[\mz p]
+{\mz \Gamma; p \rightarrow p }
+{}
+\tab
+\infer[\mz \bang p]
+{\mz \Gamma, p; \cdot \rightarrow \bang p}
+{}
+\]
+
+\[
+\infer[\mz \otimes]
+{\mz \Gamma; \Delta_1, \Delta_2 \rightarrow A \otimes B}
+{\mz \Gamma; \Delta_1 \rightarrow A & \mz \Delta_2 \rightarrow B}
+\]
+
+\subsection{Derivation}
+
+The derivation judgment takes the head term of a rule and instantiates all the linear and persistent facts. The form of the judgment
+is $\dz \Gamma ; \Delta ; \Xi ; \Gamma_1 ; \Delta_1 ; \Omega \rightarrow \Xi'; \Delta'; \Gamma'$ with the following meaning:
+
+\begin{enumerate}
+   \item[$\Gamma$] multi-set of persistent resources in the database;
+   \item[$\Delta$] multi-set of linear resources in the database not yet consumed;
+   \item[$\Xi$] multi-set of linear resources that have been consumed while matching the body of the rule, matching comprehensions or aggregates;
+   \item[$\Gamma_1$] multi-set of persistent facts that have been derived using the current rule;
+   \item[$\Delta_1$] multi-set of linear facts that have been derived using the current rule;
+   \item[$\Omega$] ordered list contain the terms of the head of rule that still need to be derived. We start with the head of the rule $B$ that is continuously deconstructed to derive all the facts of the rule;
+   \item[$\Xi'$] multi-set of consumed linear facts after applying the rule;
+   \item[$\Delta'$] multi-set of derived linear facts after applying the rule;
+   \item[$\Gamma'$] multi-set of derived persistent facts after applying the rule.
+\end{enumerate}
+
+We did not include the aggregates here because they are similar to comprehensions. The main rule to
+derive comprehensions is $\dz comp$. It unfolds the comprehension which it can be then either
+applied ($\m{derive} \with R$ followed by $\m{derive} \lolli$) or not ($\m{derive} \with L$).
+The inference rule $\m{derive} \lolli$ takes the linear implication from the ordered list of head terms and
+splits the linear context $\Gamma$ to match the comprehension body and recursively derives the head of the comprehension
+and the remaining head terms $\Omega$.
+The HLD semantics do not take into account the contents of the database to determine how many times a comprehension
+should be applied because the process is entirely non-deterministic.
+
+\[
+\infer[\dz p]
+{\dz \Gamma ; \Delta ; \Xi ; \Gamma_1 ; \Delta_1 ; p, \Omega \rightarrow \Xi' ; \Delta' ; \Gamma'}
+{\dz \Gamma ; \Delta ; \Xi ; \Gamma_1 ; p, \Delta_1 ; \Omega \rightarrow \Xi' ; \Delta' ; \Gamma'}
+\tab
+\infer[\dz \bang p]
+{\dz \Gamma ; \Delta ; \Xi ; \Gamma_1 ; \Delta_1 ; \bang p, \Omega \rightarrow \Xi' ; \Delta' ; \Gamma'}
+{\dz \Gamma ; \Delta ; \Xi ; \Gamma_1, p ; \Delta_1 ; \Omega \rightarrow \Xi' ; \Delta' ; \Gamma'}
+\]
+
+\[
+\infer[\dz \otimes]
+{\dz \Gamma ; \Delta ; \Xi ; \Gamma_1 ; \Delta_1 ; A \otimes B, \Omega \rightarrow \Xi' ; \Delta' ; \Gamma'}
+{\dz \Gamma ; \Delta ; \Xi ; \Gamma_1 ; \Delta_1 ; A, B, \Omega \rightarrow \Xi' ; \Delta' ; \Gamma'}
+\tab
+\infer[\dz 1]
+{\dz \Gamma ; \Delta ; \Xi ; \Gamma_1; \Delta_1 ; 1, \Omega \rightarrow \Xi' ; \Delta' ; \Gamma'}
+{\dz \Gamma ; \Delta ; \Xi ; \Gamma_1; \Delta_1 ; \Omega \rightarrow \Xi' ; \Delta' ; \Gamma'}
+\]
+
+\[
+\infer[\dz end]
+{\dz \Gamma ; \Delta ; \Xi' ; \Gamma' ; \Delta' ; \cdot \rightarrow \Xi' ; \Delta' ; \Gamma'}
+{}
+\]
+
+\[
+\infer[\dz \m{comp}]
+{\dz \Gamma ; \Delta ; \Xi ; \Gamma_1 ; \Delta_1 ; \comp A \lolli B, \Omega \rightarrow \Xi' ; \Delta' ; \Gamma'}
+{\dz \Gamma ; \Delta ; \Xi ; \Gamma_1 ; \Delta_1 ; 1 \with (A \lolli B \otimes \comp A \lolli B), \Omega \rightarrow \Xi' ; \Delta' ; \Gamma'}
+\]
+
+\[
+\infer[\dz \lolli]
+{\dz \Gamma ; \Delta_a, \Delta_b ; \Xi ; \Gamma_1 ; \Delta_1 ; A \lolli B, \Omega \rightarrow \Xi' ; \Delta' ; \Gamma'}
+{\mz \Gamma ; \Delta_a \rightarrow A & \dz \Gamma ; \Delta_b ; \Xi, \Delta_a ; \Gamma_1 ; \Delta_1 ; B, \Omega \rightarrow \Xi' ; \Delta' ; \Gamma'}
+\]
+
+\[
+\infer[\dz \with L]
+{\dz \Gamma ; \Delta ; \Xi ; \Gamma_1 ; \Delta_1 ; A \with B, \Omega \rightarrow \Xi' ; \Delta'; \Gamma'}
+{\dz \Gamma ; \Delta ; \Xi ; \Gamma_1 ; \Delta_1 ; A, \Omega \rightarrow \Xi' ; \Delta'; \Gamma'}
+\tab
+\infer[\dz \with R]
+{\dz \Gamma ; \Delta ; \Xi ; \Gamma_1 ; \Delta_1 ; A \with B, \Omega \rightarrow \Xi' ; \Delta' ; \Gamma'}
+{\dz \Gamma ; \Delta ; \Xi ; \Gamma_1 ; \Delta_1 ; B, \Omega \rightarrow \Xi' ; \Delta' ; \Gamma'}
+\]

@@ -1,0 +1,339 @@
+The low level dynamic semantics (LLD) removes all the non-deterministic choices in HLD
+and makes them deterministic. The new semantics will do the following:
+
+\begin{itemize}
+   \item Match rules by priority order;
+   \item Determine the set of linear facts needed to match either the body of the rule or the body of comprehensions without guessing;
+   \item Apply as many comprehensions as the database allows;
+   \item Apply as many aggregates as the database allows.
+\end{itemize}
+
+HLD had many different proof trees for a given triplet $\Gamma; \Delta; \Phi$ because HLD allows choices to be made during the inference rules. For instance, in HLD any rule could be selected to be executed. In LLD there is only one proof tree
+for a given $\Gamma; \Delta; \Phi$ since there is no guessing involved. LLD semantics present a complete step by step mechanism that is needed to correctly evaluate an LM program. For instance, when LLD tries to apply a rule, it will check if there is enough
+facts in the database and backtrack until a rule can be applied.
+
+\begin{theorem}
+In LLD, there is only one possible proof for a given $\Gamma; \Delta; \Phi$.
+\end{theorem}
+
+\begin{proof}
+Inference rules of every judgment in LLD are disjunct, therefore only one inference rule can be applied at any given point in the proof.
+\end{proof}
+
+LLD shares exactly the same inputs and outputs as HLD. The first difference between the two systems starts when picking a rule to derive.
+Instead of guessing, LLD treats the list of rules as a stack and picks the first rule $R$ to execute (the rule with the highest priority). The remaining rules are stored as a continuation. If $R$ cannot be matched because there is not enough facts in the database,
+we backtrack and use the rule continuation to pick the next rule and so on, until one rule can be successfully applied.
+
+\subsection{Continuation Frames}
+
+The most interesting aspect introduced by LLD is the continuation frame. A continuation frame acts as a choice
+point that is created during rule matching whenever we try to match a fact expression against the database.
+The frame considers all the facts relevant to the expression given the current variable bindings and predicate,
+that may or not fail during the remaining matching process.
+
+The frame contains enough state to resume the matching
+process at the time of its creation, therefore we can easily backtrack to the choice point and select the next candidate
+fact from the database (judgment $\contlld$ or $\contclld$).
+We keep all the continuation frames in a continuation stack, so in order to backtrack we update the top frame and
+select the next fact candidate to continue the matching process.
+If all candidates are exhausted, we pop the top frame and try the next one.
+
+By using this match mechanism, we can determine which facts need to be used to match a rule.
+Our LM implementation works like LLD, by iterating over
+the available facts at each choice point and then committing to the rule if the matching process
+succeeds. However, while the implementation only attempts to match rules with a very high change of success,
+LLD is more na\"{i}ve in this aspect because it tries all rules in order.
+
+\subsection{Structure of Continuation Frames}
+
+We have two continuation frame types. One frame is stored when dealing with persistent fact expressions and the other when dealing
+with linear fact expressions.
+
+\subsubsection{Persistent Frame}
+
+A persistent frame has the form $[\Gamma'; \Delta; \Xi; \bang p; \Omega; \Lambda; \Upsilon]$, where:
+
+\begin{enumerate}
+   \item[$\Delta$] remaining multi-set of linear facts;
+   \item[$\Xi$] multi-set of linear facts we have consumed to reach this point;
+   \item[$\bang p$] current fact expression that originated this choice point;
+   \item[$\Omega$] ordered list of remaining terms needed to match past this choice point;
+   \item[$\Lambda$] multi-set of linear fact expressions that we have matched to reach this choice point. All the linear facts that match these terms are located in $\Xi$;
+   \item[$\Upsilon$] multi-set of persistent fact expressions that we matched up to this point.
+\end{enumerate}
+
+\subsubsection{Linear Frame}
+
+A linear frame has the form $(\Delta; \Delta'; \Xi; p; \Omega; \Lambda; \Upsilon)$, where:
+
+\begin{enumerate}
+   \item[$\Delta$] multi-set of linear facts that are not of type $p$ plus all the other $p$'s we have already tried, including the current $p$;
+   \item[$\Delta'$] all the other $p$'s we haven't tried yet. It is a multi-set of linear facts;
+   \item[$\Xi$] multi-set of linear facts we have consumed to reach this point;
+   \item[$p$] current fact expression that originated this choice point;
+   \item[$\Omega$] ordered list of remaining terms needed to match past this choice point;
+   \item[$\Lambda$] multi-set of linear fact expressions that we have matched to reach this choice point. All the linear facts that match these terms are located in $\Xi$;
+   \item[$\Upsilon$] multi-set of persistent fact expressions that we matched up to this point.
+\end{enumerate}
+
+\subsection{Step}
+
+The starting inference rule of LLD is identical to the one used in HLD described in \ref{step_hld}.
+
+\[
+\infer[\stepz]
+{\stepo [\Gamma_1 .. \mid \Gamma_i .. \mid \Gamma_n]; [\Delta_1 .. \mid \Delta_i .. \mid \Delta_n]; \Phi \Longrightarrow [\Gamma_1, \Gamma'_1 .. \mid \Gamma_i, \Gamma'_i .. \mid \Gamma_n, \Gamma'_n]; [\Delta_1, \Delta'_1 .. \mid (\Delta_i - \Xi'), \Delta'_i .. \mid \Delta_n, \Delta'_n]}
+{\doo \Gamma_i; \Delta_i; \Phi \rightarrow \Xi'; \Delta'_1, ..., \Delta'_n; \Gamma'_1, ..., \Gamma'_n}
+\]
+
+\subsection{Application}
+
+When starting an execution step, we pick the first rule $R_1$ and create a rule continuation with the form $(\Phi, \Delta)$, where $\Phi$
+is the stack of remaining rules and $\Delta$ is the starting linear context. Context $\Gamma$ does not need to be saved
+because its facts are never deleted.
+
+\[
+\infer[\doo \m{rule}]
+{\doo \Gamma; \Delta; R_1, \Phi \rightarrow \Xi'; \Delta';\Gamma'}
+{\ao \Gamma; \Delta; R_1; (\Phi, \Delta) \rightarrow \Xi';\Delta';\Gamma'}
+\]
+
+\[
+\infer[\ao \m{rule}]
+{\ao \Gamma; \Delta; A \lolli B; R \rightarrow \Xi'; \Delta'; \Gamma'}
+{\mo \Gamma; \Delta; \cdot; A; B; \cdot; R \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+
+\subsection{Match}\label{sec:body_match}
+
+The matching judgment uses the form $\mo \Gamma; \Delta; \Xi; \Omega; H; C; R \rightarrow \Xi'; \Delta'; \Gamma'$ where:
+
+\begin{enumerate}
+   \item[$\Delta$] multi-set of linear facts still available to complete the matching process;
+   \item[$\Xi$] multi-set of linear facts consumed up to this point;
+   \item[$\Omega$] ordered list of deconstructed head terms to match;
+   \item[$H$] head of the rule;
+   \item[$C$] ordered list of frames representing the continuation stack;
+   \item[$R$] rule continuation to be used if the current rule fails;
+   \item[$\Xi'$] multi-set of consumed linear facts after applying the rule;
+   \item[$\Delta'$] multi-set of derived linear facts after applying the rule;
+   \item[$\Gamma'$] multi-set of derived persistent facts after applying the rule.
+\end{enumerate}
+
+Matching will attempt to use facts from $\Delta$ and $\Gamma$ to match the terms of the body of the rule represented as $\Omega$. During this process continuation frames are pushed into $C$.
+If the matching process fails, we use the continuation stack through the $\cont$judgment.
+
+\subsubsection{Linear fact expressions}
+
+The first 4 inference rules are used when the head of $\Omega$ is a linear fact expression $p$: (1) the
+continuation stack is empty; (2) the continuation is not empty and a linear continuation frame is at the top;
+(3) the continuation stack is not empty and a persistent continuation frame is at the top;
+and (4) we cannot find any linear fact in the database that matches $p$. Note that in the first 3 rules,
+we find $p_1$ and $\Delta''$ as facts from the database that match $p$ the hidden and partially initialized arguments.
+Context $\Delta''$ is stored in the second argument of the new continuation frame but passes along with $\Delta$ since they
+have not been consumed yet (just $p_1$).
+
+{\footnotesize
+\[
+\infer[\mo p~\m{first}]
+{\mo \Gamma ; \Delta, p_1, \Delta'' ; \Xi; p, \Omega; H; \cdot; R \rightarrow \Xi'; \Delta'; \Gamma'}
+{p_1, \Delta'' \prec p & \mo \Gamma ; \Delta, \Delta''; \Xi, p_1; \Omega; H; (\Delta, p_1; \Delta''; p; \Omega; \Xi; \cdot; \cdot); R \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+
+\[
+\infer[\mo p~\m{on}~q]
+{\mo \Gamma ; \Delta, p_1, \Delta'' ; \Xi; p, \Omega; H; C_1, C; R \rightarrow \Xi'; \Delta'; \Gamma'}
+{p_1, \Delta'' \prec p & \begin{split} C_1 &= (\Delta_{old}; \Delta'_{old}; q; \Omega_{old}; \Xi_{old}; \Lambda; \Upsilon) \\ \mo &\Gamma ; \Delta, \Delta''; \Xi, p_1; \Omega; H; (\Delta, p_1; \Delta''; p; \Omega; \Xi; q, \Lambda; \Upsilon), C_1, C; R \rightarrow \Xi'; \Delta'; \Gamma'\end{split}}
+\]
+
+
+\[
+\infer[\mo p~\m{on}~\bang q]
+{\mo \Gamma ; \Delta, p_1, \Delta'' ; \Xi; p, \Omega; H; C_1, C; R \rightarrow \Xi'; \Delta'; \Gamma'}
+{p_1, \Delta'' \prec p & \begin{split}C_1 &= [\Gamma_{old}; \Delta_{old}; \bang q; \Omega_{old}; \Xi_{old}; \Lambda; \Upsilon] \\ \mo &\Gamma ; \Delta, \Delta''; \Xi, p_1; \Omega; H; (\Delta, p_1; \Delta''; p; \Omega; \Xi; \Lambda; q, \Upsilon), C_1, C; R \rightarrow \Xi'; \Delta'; \Gamma' \end{split}}
+\]
+
+\[
+\infer[\mo p~\m{fail}]
+{\mo \Gamma ; \Delta; \Xi; p, \Omega; H; C; R \rightarrow \Xi'; \Delta'; \Gamma'}
+{\Delta \npreceq p & \cont C ; H; R; \Gamma \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+}
+
+\subsubsection{Persistent fact expressions}
+
+The next 4 inference rules are used when the head of $\Omega$ contains a persistent fact expression $\bang p$. They are identical
+to the previous 4 rules but they deal with the persistent context $\Gamma$.
+
+{\footnotesize
+\[
+\infer[\mo \bang p~\m{first}]
+{\mo \Gamma, p_1, \Gamma'' ; \Delta; \Xi; \bang p, \Omega; H; \cdot; R \rightarrow \Xi'; \Delta'; \Gamma'}
+{p_1, \Gamma'' \prec \bang p & \mo \Gamma, p_1, \Gamma'' ; \Delta; \Xi; \Omega; H; [\Gamma''; \Delta; \bang p ; \Omega; \Xi; \cdot; \cdot]; R \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+
+\[
+\infer[\mo \bang p~\m{on}~q]
+{\mo \Gamma, p_1, \Gamma'' ; \Delta; \Xi; \bang p, \Omega; H; C_1, C; R \rightarrow \Xi'; \Delta'; \Gamma'}
+{p_1, \Gamma'' \prec \bang p & \begin{split}C_1 &= (\Delta_{old}; \Delta'_{old}; q; \Omega_{old}; \Xi_{old}; \Lambda; \Upsilon) \\ \mo &\Gamma, p_1, \Gamma'' ; \Delta; \Xi; \Omega; H; [\Gamma''; \Delta; \bang p ; \Omega; \Xi; q, \Lambda; \Upsilon], C_1, C; R \rightarrow \Xi'; \Delta'; \Gamma'\end{split}}
+\]
+
+
+\[
+\infer[\mo \bang p~\m{on}~\bang q]
+{\mo \Gamma, p_1, \Gamma'' ; \Delta; \Xi; \bang p, \Omega; H; C_1, C; R \rightarrow \Xi'; \Delta'; \Gamma'}
+{p_1, \Gamma'' \prec \bang p & \begin{split}C_1 &= [\Gamma_{old}; \Delta_{old}; \bang q; \Omega_{old}; \Xi_{old}; \Lambda; \Upsilon] \\ \mo &\Gamma, p_1, \Gamma'' ; \Delta; \Xi; \Omega; H; [\Gamma''; \Delta; \bang p ; \Omega; \Xi; \Lambda; q, \Upsilon], C_1, C; R \rightarrow \Xi'; \Delta'; \Gamma'\end{split}}
+\]
+
+\[
+\infer[\mo \bang p~\m{fail}]
+{\mo \Gamma ; \Delta; \Xi; \bang p, \Omega; H; C; R \rightarrow \Xi'; \Delta'; \Gamma'}
+{\Gamma \npreceq \bang p & \cont C; H; R; \Gamma \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+}
+
+\subsubsection{Other expressions}
+
+Finally, we have the inference rule $\mo \otimes$ that deconstructs body terms with $\otimes$ and the $\mo \m{end}$ rule
+that terminates the matching process and initiates the derivation of head terms because $\Omega$ is empty.
+
+{\footnotesize
+\[
+\infer[\mo \otimes]
+{\mo \Gamma ; \Delta; \Xi; A \otimes B, \Omega ; H ; C; R \rightarrow \Xi'; \Delta';\Gamma'}
+{\mo \Gamma ; \Delta; \Xi; A, B, \Omega; H; C; R \rightarrow \Xi';\Delta';\Gamma'}
+\tab
+\infer[\mo \m{end}]
+{\mo \Gamma ; \Delta; \Xi; \cdot ; H; C; R \rightarrow \Xi'; \Delta'; \Gamma'}
+{\done \Gamma ; \Delta; \Xi; \cdot ; H; \cdot \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+}
+
+\subsection{Continuation}\label{sec:match_cont}
+
+If the previous matching process fails, we pick the top frame from the stack $C$ and restore the matching process using another fact and/or context. The continuation judgment $\cont C; H; R; \Gamma \rightarrow \Xi'; \Delta'; \Gamma'$ deals with the backtracking process where the meaning of each argument is as follows:
+
+\begin{enumerate}
+   \item[$C$] continuation stack;
+   \item[$H$] head of the current rule we are executing;
+   \item[$R$] next available rules if the current rule does not match.
+\end{enumerate}
+
+\subsubsection{Linear continuation frames}
+
+The next two inference rules detect a linear continuation frame on top of the continuation stack. The first rule picks the next
+fact candidate $p_1$ from the second argument of the linear frame and updates the frame. Otherwise, if we have no more
+candidate facts, we pop the continuation frame and use $\cont$again with the remaining continuation stack.
+
+%{\footnotesize
+\[
+\infer[\cont p~\m{next}]
+{\cont (\Delta; p_1, \Delta''; p, \Omega; \Xi; \Lambda; \Upsilon), C; H; R; \Gamma \rightarrow \Xi'; \Delta'; \Gamma'}
+{\mo \Gamma ; \Delta, \Delta''; \Xi, p_1; \Omega; H; (\Delta, p_1; \Delta''; p, \Omega; H; \Xi; \Lambda; \Upsilon), C; R \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+%}
+
+%{\footnotesize
+\[
+\infer[\cont p~\m{no~more}]
+{\cont (\Delta; \cdot; p, \Omega; \Xi; \Lambda; \Upsilon), C; H; R; \Gamma \rightarrow \Xi'; \Delta'; \Gamma'}
+{\cont C; H; R; \Gamma; \Xi'; \Delta'; \Gamma'}
+\]
+%}
+
+\subsubsection{Persistent continuation frames} We also have the same two kinds of inference rules for persistent continuation frames.
+
+%{\footnotesize
+\[
+\infer[\cont \bang p~\m{next}]
+{\cont [p_1, \Gamma'; \Delta; \bang p, \Omega; \Xi; \Lambda; \Upsilon], C; H; R; \Gamma \rightarrow \Xi'; \Delta'; \Gamma'}
+{\mo \Gamma; \Delta; \Xi; \Omega; H; [\Gamma'; \Delta; \bang p, \Omega; \Xi; \Lambda; \Upsilon], C; R \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+%}
+
+%{\footnotesize
+\[
+\infer[\cont \bang p~\m{no~more}]
+{\cont [\cdot; \Delta; \bang p, \Omega; \Xi; \Lambda; \Upsilon], C; H; R; \Gamma \rightarrow \Xi'; \Delta'; \Gamma'}
+{\cont C; H; R; \Gamma \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+%}
+
+\subsubsection{Empty continuation stack}
+
+Finally, if the continuation stack is empty, we simply force execution to try the next inference rule in $\Phi$.
+
+%{\footnotesize
+\[
+\infer[\cont \m{next~rule}]
+{\cont \cdot; H; (\Phi, \Delta); \Gamma \rightarrow \Xi'; \Delta'; \Gamma'}
+{\doo \Gamma; \Delta; \Phi \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+%}
+
+\subsection{Derivation}
+
+Once the list of terms $\Omega$ in the $\mo$judgment is exhausted (rule $\mo \m{end}$), we derive the terms of the head of rule.
+The derivation judgment uses the form $\done \Gamma; \Delta; \Xi; \Gamma_1; \Delta_1; \Omega \rightarrow \Xi'; \Delta'; \Gamma'$,
+where:
+
+\begin{enumerate}
+   \item[$\Delta$] multi-set of linear facts we started with minus the linear facts consumed $\Xi$ during the matching of the body of the rule;
+   \item[$\Xi$] multi-set of linear facts consumed during the matching of the body of the rule;
+   \item[$\Gamma_1$] set of persistent facts derived up to this point in the derivation;
+   \item[$\Delta_1$] multi-set of linear facts derived up to this point in the derivation;
+   \item[$\Omega$] remaining terms to derive as an ordered list. We start with $B$ if the original rule is $A \lolli B$.
+\end{enumerate}
+
+\subsubsection{Fact templates} When deriving either $p$ or $\bang p$ we have the following two inference rules:
+
+{\footnotesize
+\[
+\infer[\done p]
+{\done \Gamma ; \Delta; \Xi; \Gamma_1 ; \Delta_1; p, \Omega \rightarrow \Xi'; \Delta'; \Gamma'}
+{\done \Gamma ; \Delta; \Xi; \Gamma_1 ; p, \Delta_1; \Omega \rightarrow \Xi'; \Delta'; \Gamma'}
+\tab
+\infer[\done \bang p]
+{\done \Gamma ; \Delta ; \Xi; \Gamma_1 ; \Delta_1; \bang p, \Omega \rightarrow \Xi'; \Delta'; \Gamma'}
+{\done \Gamma ; \Delta ; \Xi; \Gamma_1, p; \Delta_1; \Omega \rightarrow \Xi'; \Delta'; \Gamma'}
+\]
+}
+
+\subsubsection{Deconstruct head}
+The following two inference rules deconstruct the head list $\Omega$ from terms created using either $1$ or $\otimes$.
+
+{\footnotesize
+\[
+\infer[\done 1]
+{\done \Gamma; \Delta; \Xi; \Gamma_1 ; \Delta_1; 1, \Omega \rightarrow \Xi';\Delta';\Gamma'}
+{\done \Gamma; \Delta; \Xi; \Gamma_1 ; \Delta_1; \Omega \rightarrow \Xi'; \Delta';\Gamma'}
+\tab
+\infer[\done \otimes]
+{\done \Gamma ; \Delta; \Xi; \Gamma_1; \Delta_1; A \otimes B, \Omega \rightarrow \Xi'; \Delta';\Gamma'}
+{\done \Gamma ; \Delta; \Xi; \Gamma_1; \Delta_1; A, B, \Omega \rightarrow \Xi';\Delta';\Gamma'}
+\]
+}
+
+\subsubsection{Comprehensions} The inference rule $\done \m{comp}$ deals with comprehensions. Comprehensions have the form $A \com B$, where $A$ is the body and $B$ the head of the comprehension. Judgment $\mc$initiates the matching process of the body $A$
+of the comprehension (explained in the next section).
+
+{\footnotesize
+\[
+\infer[\done \m{comp}]
+{\done \Gamma; \Delta ; \Xi; \Gamma_1; \Delta_1; A \com B, \Omega \rightarrow \Xi';\Delta';\Gamma'}
+{\mc \Gamma; \Delta; \Xi; \Gamma_1; \Delta_1; \cdot; A ; B ; \cdot; \cdot; A \com B; \Omega; \Delta \rightarrow \Xi';\Delta';\Gamma'}
+\]
+}
+
+\subsubsection{Successful rule} Finally, if the ordered list $\Omega$ is exhausted, then the whole execution process is done.
+Note how the output arguments match the input arguments of the $\done$judgment.
+
+{\footnotesize
+\[
+\infer[\done \m{end}]
+{\done \Gamma; \Delta; \Xi; \Gamma_1; \Delta_1; \cdot \rightarrow \Xi; \Delta_1; \Gamma_1}
+{}
+\]
+}
+
+\input{lld-comprehensions}

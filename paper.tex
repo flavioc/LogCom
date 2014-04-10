@@ -1,0 +1,70 @@
+\documentclass[10pt]{amsart}
+
+\usepackage{fullpage}
+\usepackage{graphicx}
+\usepackage{times}
+
+\usepackage{amsmath}
+\usepackage{url}
+\usepackage{fancyvrb}
+\usepackage{verbatim}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{multirow}
+\usepackage{floatrow}
+\usepackage{proof-dashed}
+\usepackage{amsthm}
+\usepackage[numbers,sort]{natbib}
+\usepackage[backref,pageanchor=true,plainpages=false, pdfpagelabels, bookmarks,bookmarksnumbered]{hyperref}
+\input{fp-macros}
+\input{macros}
+
+\begin{document}
+
+\newcommand{\cmu}{\ensuremath{^\dag}}
+\newcommand{\fcup}{\ensuremath{^\ddag}}
+
+\title{Dynamic Semantics for a Concurrent Forward-Chaining Linear Logic Programming Language}
+\author{Flavio Cruz\cmu\fcup, Frank Pfenning\cmu\\
+       \cmu Carnegie Mellon University, Pittsburgh, PA 15213\\
+       \url{{fmfernan, fp}@cs.cmu.edu} \\
+       \fcup CRACS \& INESC TEC, Faculty of Sciences, University Of Porto\\
+       Rua do Campo Alegre, 1021/1055, 4169-007 Porto, Portugal\\
+       \url{flavioc@dcc.fc.up.pt}}
+
+\newtheorem{lemma}{Lemma}[section]
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{definition}{Definition}[section]
+
+\begin{abstract}
+Thing
+\end{abstract}
+
+\maketitle
+
+\section{Introduction}
+\input{intro}
+
+\section{Related Work}
+\input{related_work}
+
+\section{The LM Language}
+\input{language}
+
+\section{Linear Logic}
+\input{linear}
+
+\section{High Level Dynamic Semantics}
+\input{hld}
+
+\section{Low Level Dynamic Semantics}
+\input{lld}
+
+\section{Soundness Proof}
+\input{soundness}
+
+\section{Conclusions}
+\bibliographystyle{acmtrans}
+\bibliography{refs}
+\end{document}
+

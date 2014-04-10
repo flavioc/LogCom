@@ -1,0 +1,29 @@
+
+Prolog~\cite{Colmerauer:1993:BP:154766.155362} is one of the first logic programming languages to become available, yet it still one the most popular logic programming language in use today. Prolog is a \emph{backwards-chaining} logic programming language where a program is composed of a set of rules that can be activated by inputing a query. Given a query $q(\hat{x})$, a Prolog interpreter will work backwards by matching $q(\hat{x})$ against the head of a rule. If found, the interpreter will then try to match the body of the rule, recursively, until it finds the program axioms (rules without body). If the search procedure succeeds, the interpreter finds a valid substitution for the $\hat{x}$ variables.
+
+Datalog~\cite{Ramakrishnan93asurvey} is very popular logic programming language for deductive databases. Although it is a syntactic subset of Prolog, it works differently than Prolog because it is a \emph{forward-chaining} logic programming language. In Datalog, the program is composed of a database of facts $D$ and a set of rules $R$. Initially, the database $D$ starts with a set of axioms given by the program. Then, the interpreter will pick a subset of rules $R'$ of $R$ that can be applied using $D$. By applying $R'$, new facts are derived and added to the database.
+
+Datalog interpreters usually employ a technique called \emph{Iterative Fixpoint Evaluation} (IFE) or \emph{semi-na\"{i}ve evaluation}~\cite{Ramakrishnan93asurvey} in order to generate the complete set of facts from the derivation rules. In IFE, computation is performed in iterations. In the first iteration, we consider all the axioms and
+apply all rules that can be applied using the database. Once the database will be updated with the newly derived facts, we apply again all the rules given
+the new database. If a rule is applied with at-least one fact that was derived in the previous iteration, then the facts instantiated by the head of the
+rule can be added to the database. Otherwise, we ignore them since such facts must already been derived before. This is repeated until no new facts are
+added to the database.
+
+IFE takes advantage of the fact that Datalog is based on Horn clauses~\cite{journals/jsyml/Horn51} and is thus monotonic. When a rule is applied, new information is added to the database but not removed. The database can be implemented efficiently since facts are stored there until the program completes.
+
+We have designed a new forward-chaining logic programming language called Linear Meld (LM). LM is similar to Datalog but uses linear logic~\cite{girard-87} as its foundation. Since linear logic is the \emph{logic of resources}, LM rules may consume facts from the database, which makes IFE impossible to use as
+an evaluation strategy. LM is concurrent because the forward-chaining proof process is done at several places - called \emph{nodes} -
+and derivation of facts may lead to communication between them. The communication paths between nodes and the nodes themselves create
+a graph data structure where computation happens concurrently.
+LM also includes novel features such as comprehensions and aggregates, which allow the programmer to iterate over
+or accumulate values from the database, respectively.
+
+In this paper, we want to present an high level dynamic semantics and then a low level dynamic semantics of LM.
+Both semantics will be presented using proof-theoretic methods. The high level semantics will be very closely related to the linear logic sequent calculus.
+The low level semantics will be much closer to a real implementation since it removes most of non-determinism of the high level semantics and
+also describes in detail how the proof search mechanism works, including backtracking and resource management. We also relate both semantics by
+proving that the low level dynamic semantics is sound in relation to the high level dynamic semantics.
+
+The paper is organized as follows. In the first section, we give a brief overview of LM, including its syntax and how it works in practice.
+Next, we present the connection between LM and linear logic, including the connectives used and how they relate to LM programs. We then present
+the high level and low level dynamic semantics, followed by the soundness proof. Finally, we finish the paper with some conclusions.

@@ -1,0 +1,18 @@
+
+Now that we have presented both the HLD and LLD semantics, we are in position to start building our soundness theorem.
+The soundness theorem proves that if a rule was successfully derived in the LLD semantics then it can also be derived
+in the HLD semantics. Since the HLD semantics are so close to linear logic, we prove that our language has a determined, correct,
+proof search behavior when executing programs. However, the completeness theorem cannot be proven since LLD lacks the non-determinism
+inherent in HLD.
+
+
+First and foremost, we need to prove some auxiliary theorems and definitions that will be used during the soundness theorem.
+
+\subsection{Term Equivalence}
+\input{termequiv}
+
+\subsection{Well-Formed Continuation Frames}
+\input{wellformedframes}
+
+\subsection{Body Match Soundness}
+\input{bodymatch}

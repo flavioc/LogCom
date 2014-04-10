@@ -1,0 +1,104 @@
+Given a body $A$ that we want to match, the starting linear context $\Delta_{N}$ and the persistent context $\Gamma$, we want to
+make sure that the frames used are always well-formed in relation to $A$ and the contexts.
+
+\begin{definition}[Well-Formed Frame]
+
+Given a triplet $A; \Gamma; \Delta_{N}$ where $A$ is a term, $\Gamma$ is a multi-set of persistent resources and $\Delta_{N}$ a multi-set of linear resources we say that a frame $f$ is well-formed iff:
+
+\begin{enumerate}
+   \item Linear frame $f = (\Delta, p_1; \Delta'; \Xi_1, ..., \Xi_m; p; \Omega_1, ..., \Omega_n; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_k)$
+   \begin{enumerate}
+      \item $\feq{p, \Omega_1, ..., \Omega_n, \Lambda_1, ..., \Lambda_m, \Upsilon_1, ..., \Upsilon_k}{A}$ (the remaining terms and already matched terms are equivalent to the initial body $A$);
+      \item $\mz \Xi_1, ..., \Xi_m \rightarrow \Lambda_1 \otimes ... \otimes \Lambda_m$ and $\mz \Xi_i \rightarrow \Lambda_i$ for every $i$;
+      \item $\Delta, \Delta', \Xi, p_1 = \Delta_{N}$ (available facts, candidate facts for $p$, consumed facts and the linear fact used for $p$, respectively, are the same as the initial $\Delta_{N}$);
+      \item $\mz \Gamma; \cdot \rightarrow \Upsilon_1 \otimes ... \otimes \Upsilon_k$.
+   \end{enumerate}
+   \item Persistent frame $f = [\Gamma'; \Delta; \Xi_1, ..., \Xi_m; \bang p; \Omega_1, ..., \Omega_n; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_k]$
+      \begin{enumerate}
+         \item $\feq{\bang p, \Omega_1, ..., \Omega_n, \Lambda_1, ..., \Lambda_m, \Upsilon_1, ..., \Upsilon_k}{A}$;
+         \item $\mz \Xi_1, ..., \Xi_m \rightarrow \Lambda_1 \otimes ... \otimes \Lambda_m$ and $\mz \Xi_i \rightarrow \Lambda_i$ for every $i$;
+         \item $\Delta, \Xi = \Delta_{N}$;
+         \item $\mz \Gamma; \cdot \rightarrow \bang p \otimes \Upsilon_1 \otimes ... \otimes \Upsilon_k$;
+         \item $\Gamma' \subset \Gamma$ (remaining candidates are a subset of $\Gamma$).
+      \end{enumerate}
+\end{enumerate}
+\end{definition}
+
+\begin{definition}[Well-Formed Stack]
+A continuation stack $C$ is well-formed iff every frame is well-formed.
+\end{definition}
+
+Given the previous definitions, we can now define what it means for a matching judgment to be well-formed.
+
+\begin{definition}[Well-Formed Body Match]
+
+$\mo \Gamma; \Delta; \Xi; \Omega; H; C; R \rightarrow \Xi'; \Delta'; \Gamma'$ is well-formed in relation to a triplet $A; \Gamma; \Delta_{N}$ iff:
+
+\begin{enumerate}
+   \item $\Delta, \Xi = \Delta_{N}$
+   \item $C$ is well-formed in relation to $A; \Gamma; \Delta_{N}$ and:
+   \begin{enumerate}
+      \item If $C = \cdot$
+   
+      $\feq{\Omega}{A}$.
+   
+      \item Else if $C = (\Delta_a, p_1; \Delta_b; \Xi''; p; \Omega'; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_k), C'$
+   
+      \begin{enumerate}
+         \item $\feq{\Omega'}{\Omega}$;
+         \item $p_1 \in \Xi$ and $\mz \Gamma; p_1 \rightarrow p$;
+         \item $\Xi = \Xi'', p_1$;
+         \item $\Delta = \Delta_a, \Delta_b$.
+      \end{enumerate}
+      \item Else if $C = [\Gamma'; \Delta''; \Xi''; \bang p; \Omega'; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_k], C'$
+      \begin{enumerate}
+         \item $\feq{\Omega}{\Omega'}$;
+         \item $\Xi = \Xi''$;
+         \item $\Delta = \Delta''$.
+      \end{enumerate}
+   \end{enumerate}
+\end{enumerate}
+
+\end{definition}
+
+\begin{definition}[Well-Formed Comprehension Match]
+$\mc \Gamma; \Delta; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi; \Omega; C; P; A \com B; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'$ is well-formed in relation to a triplet $A; \Gamma; \Delta_{N}$ iff:
+
+\begin{enumerate}
+   \item $P$ is only composed of persistent frames.
+   \item $C$ is composed of either linear or persistent frames, but the first frame is linear.
+   \item $\Delta, \Xi = \Delta_{N}$
+   \item $C$ and $P$ are well-formed in relation to $A; \Gamma; \Delta_{N}$ and:
+   \begin{enumerate}
+      \item If $C = \cdot$ and $P = \cdot$
+      
+      $\feq{\Omega}{A}$.
+      
+      \item Else if $C = \cdot$ and $P = [\Gamma'; \Delta''; \Xi''; \bang p; \Omega'; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_k], P'$
+      
+      \begin{enumerate}
+         \item $\feq{\Omega}{\Omega'}$;
+         \item $\Xi = \Xi''$;
+         \item $\Delta = \Delta''$.
+      \end{enumerate}
+      
+      \item Else if $C = [\Gamma'; \Delta''; \Xi''; \bang p; \Omega'; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_k], C'$
+      \begin{enumerate}
+         \item $\feq{\Omega}{\Omega'}$;
+         \item $\Xi = \Xi''$;
+         \item $\Delta = \Delta''$.
+      \end{enumerate}
+      
+      \item Else if $C = (\Delta_a, p_1; \Delta_b; \Xi''; p; \Omega'; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_k), C'$
+   
+      \begin{enumerate}
+         \item $\feq{\Omega'}{\Omega}$;
+         \item $p_1 \in \Xi$ and $\mz \Gamma; p_1 \rightarrow p$;
+         \item $\Xi = \Xi'', p_1$;
+         \item $\Delta = \Delta_a, \Delta_b$.
+      \end{enumerate}
+   \end{enumerate}
+      
+\end{enumerate}
+
+\end{definition}
