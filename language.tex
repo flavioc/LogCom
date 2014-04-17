@@ -92,24 +92,24 @@ We use the same rule again in Fig.~\ref{fig:btree_trace}~(c) where we finally re
         \centering
         \begin{subfigure}[b]{0.5\textwidth}
                 \includegraphics[width=\textwidth]{btree_trace1}
-                \caption{Initial database. Replace axiom instantiated at the $@3$ root node.}
+                \caption{Initial database. Replace axiom instantiated at the root node.}
                 \label{fig:btree_trace1}
         \end{subfigure}%
         ~
         \begin{subfigure}[b]{0.5\textwidth}
                 \includegraphics[width=\textwidth]{btree_trace2}
-                \caption{After applying rule 3 at node $@3$. Replace fact sent to node $@5$.}
+                \caption{After applying rule 3 at node $@3$. Replace fact sent to $@5$.}
                 \label{fig:btree_trace2}
         \end{subfigure}\\
         \begin{subfigure}[b]{0.5\textwidth}
                 \includegraphics[width=\textwidth]{btree_trace3}
-                \caption{After applying rule 3 at node $@5$. Replace fact reaches node $@6$.}
+                \caption{After applying rule 3 at node $@5$. Replace fact reaches $@6$.}
                 \label{fig:btree_trace3}
         \end{subfigure}%
         ~
         \begin{subfigure}[b]{0.5\textwidth}
                   \includegraphics[width=\textwidth]{btree_trace4}
-                  \caption{After applying rule 1 (nodes $@5$). Value of key 6 has changed to 7.}
+                  \caption{After applying rule 1 (node $@5$). Key 6 has changed to 7.}
                   \label{fig:btree_trace4}
           \end{subfigure}
         \caption{An execution trace for the binary tree dictionary algorithm.}\label{fig:btree_trace}

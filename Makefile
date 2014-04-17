@@ -7,7 +7,7 @@ paper.pdf: paper.tex intro.tex \
 		refs.bib lld.tex lld-comprehensions.tex \
 		soundness.tex termequiv.tex \
 		wellformedframes.tex \
-		bodymatch.tex
+		bodymatch.tex comprehensions.tex
 	pdflatex paper.tex
 	pdflatex paper.tex
 	bibtex paper

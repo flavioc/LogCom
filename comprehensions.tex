@@ -1,0 +1,137 @@
+The soundness of rule derivation is done trivially except for comprehensions and aggregates. In this section, we present
+the comprehension lemma that can be used trivially to prove the soundness of derivation.
+
+The comprehension lemma is built from three results: (1) proving that matching the body of a comprehension is sound
+in relation to HLD;
+(2) proving that updating the continuation stacks makes them suitable for use in the next comprehension applications; and
+(3) proving that deriving the head of the comprehension is sound in relation to HLD.
+
+\subsubsection{Comprehension Body Match Soundness}
+
+Proving that matching the body of a comprehension is sound in relation to HLD follows the structure of the Lemma~\ref{thm:body_match}. The lemma uses mutual induction on the recursive judgments $\mc$and $\contc$and
+considers the three possible results of matching: failure, success with no backtracking and success with backtracking.
+
+\begin{lemma}[Comprehension body match]\label{thm:comprehension_body_match}
+Given a comprehension body $A$, consider a triplet $T = A; \Gamma; \Delta_{N}$ and a context $\Delta_{N} = \Delta_1, \Delta_2, \Xi$.
+
+If a match $\mc \Gamma; \Delta_1, \Delta_2; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi; \Omega; C; P; A \com B; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'$ is well-formed in relation to $T$ then either:
+
+   \begin{enumerate}
+      \item Match fails: \\
+      $\done \Gamma; \Delta_N; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Omega_N \rightarrow \Xi'; \Delta'; \Gamma'$
+      
+      \item Match succeeds: \\
+      $\mz \Gamma; \Delta_x \rightarrow A$ (where $\Delta_x \subseteq \Delta_N$) and one of the three sub-cases is true:
+      \begin{enumerate}
+         \item No backtracking to frames of stack $C$ or $P$ ($C \neq \cdot$):\\
+            $\mc \Gamma; \Delta_1; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi, \Delta_2; \cdot; C', C; P; A \com B; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'$ (well-formed in relation to $T$) and $\Delta_x = \Delta_2$
+         \item No backtracking to frames of stack $P$ ($C = \cdot$):\\
+         $\mc \Gamma; \Delta_1; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi, \Delta_2; \cdot; C'; P', P; A \com B; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'$ (well-formed in relation to $T$) and $\Delta_x = \Delta_2$
+         
+         \item With backtracking to a linear continuation frame in stack $C$ ($C \neq \cdot$):\\
+         $\exists f = (\Delta_a; \Delta_{b_1}, p_2, \Delta_{b_2}; p; \Xi_1, ..., \Xi_m; \Omega_1, ..., \Omega_k; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_n) \in C$ where $C = C', f, C''$ that turns into $f' = (\Delta_a, \Delta_{b_1}, p_2; \Delta_{b_2}; p; \Xi_1, ..., \Xi_m; \Omega_1, ..., \Omega_k; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_n)$ such that:
+         \begin{enumerate}
+            \item $\mc \Gamma; \Delta_c; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi_1, ..., \Xi_m, p_2, \Xi_c; \cdot; C''', f', C''; P; A \com B; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'$ (well-formed in relation to $T$) where $\Delta_c = (\Delta_1, \Delta_2, \Xi) - (\Xi_1, ..., \Xi_m, p_2, \Xi_c)$ and $\Delta_x = \Xi_1, ..., \Xi_m, p_2, \Xi_c$
+         \end{enumerate}
+            
+         \item With backtracking to a persistent continuation frame in stack $C$ ($C \neq \cdot$):\\
+         $\exists f = [\Gamma_1, p_2, \Gamma_2; \Delta_{c_1}, \Delta_{c_2}; \Xi_1, ..., \Xi_m; \bang p; \Omega_1, ..., \Omega_k; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_n] \in C$ where $C = C', f, C''$ that turns into $f' = [\Gamma_2; \Delta_{c_1}, \Delta_{c_2}; \Xi_1, ..., \Xi_m; \bang p; \Omega_1, ..., \Omega_k; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_n]$ such that:
+         \begin{enumerate}
+            \item $\mc \Gamma; \Delta_{c_1}; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Delta_{c_2}, \Xi_1, ..., \Xi_m; \cdot; C''', f', C''; P; A \com B; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'$ (well-formed in relation to $T$)
+            where $\Delta_{c_1}, \Delta_{c_2} = (\Delta_1, \Delta_2, \Xi) - (\Xi_1, ..., \Xi_m)$ and $\Delta_x = \Delta_{c_2}, \Xi_1, ..., \Xi_m$
+         \end{enumerate}
+            
+         \item With backtracking to a persistent continuation frame in stack $P$ ($C = \cdot$):\\
+         $\exists f = [\Gamma_1, p_2, \Gamma_2; \Delta_{c_1}, \Delta_{c_2}; \Xi_1, ..., \Xi_m; \bang p; \Omega_1, ..., \Omega_k; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_n] \in P$ where $P = P', f, P''$ that turns into $f' = [\Gamma_2; \Delta_{c_1}, \Delta_{c_2}; \Xi_1, ..., \Xi_m; \bang p; \Omega_1, ..., \Omega_k; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_n]$ such that:
+            \begin{enumerate}
+               \item $\mc \Gamma; \Delta_{c_1}; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Delta_{c_2}, \Xi_1, ..., \Xi_m; \cdot; C'; P''', f', P''; A \com B; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'$ (well-formed in relation to $T$) where $\Delta_{c_1}, \Delta_{c_2} = (\Delta_1, \Delta_2, \Xi) - (\Xi_1, ..., \Xi_m)$ and $\Delta_x = \Delta_{c_2}, \Xi_1, ..., \Xi_m$
+            \end{enumerate}
+      \end{enumerate}
+   \end{enumerate}
+   
+If $\contc \Gamma; \Delta_{N}; \Xi_{N}; \Gamma_{N1}; \Delta_{N1}; C; P; A \com B; \Omega_N \rightarrow \Xi'; \Delta'; \Gamma'$ and $C$ and $P$ are well-formed in relation to $T$ then either:
+
+\begin{enumerate}
+   \item Match fails: \\
+   $\done \Gamma; \Delta_N; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Omega_N \rightarrow \Xi'; \Delta'; \Gamma'$
+   
+   \item Match succeeds: \\
+   $\mz \Delta_x \rightarrow A$ (where $\Delta_x \subseteq \Delta_N$) where one sub-case is true:
+   
+   \begin{enumerate}
+      \item With backtracking to a linear continuation frame in stack $C$ ($C \neq \cdot$):\\
+      $\exists f = (\Delta_a; \Delta_{b_1}, p_2, \Delta_{b_2}; p; \Xi_1, ..., \Xi_m; \Omega_1, ..., \Omega_k; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_n) \in C$ where $C = C', f, C''$ that turns into $f' = (\Delta_a, \Delta_{b_1}, p_2; \Delta_{b_2}; p; \Xi_1, ..., \Xi_m; \Omega_1, ..., \Omega_k; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_n)$ such that:
+         \begin{enumerate}
+            \item $\mc \Gamma; \Delta_c; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi_1, ..., \Xi_m, p_2, \Xi_c; \cdot; C''', f', C''; P; A \com B; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'$ (well-formed in relation to $T$) where $\Delta_c = (\Delta_1, \Delta_2, \Xi) - (\Xi_1, ..., \Xi_m, p_2, \Xi_c)$
+         \end{enumerate}
+      
+      \item With backtracking to a persistent continuation frame in stack $C$ ($C \neq \cdot$):\\
+      $\exists f = [\Gamma_1, p_2, \Gamma_2; \Delta_{c_1}, \Delta_{c_2}; \Xi_1, ..., \Xi_m; \bang p; \Omega_1, ..., \Omega_k; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_n] \in C$ where $C = C', f, C''$ that turns into $f' = [\Gamma_2; \Delta_{c_1}, \Delta_{c_2}; \Xi_1, ..., \Xi_m; \bang p; \Omega_1, ..., \Omega_k; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_n]$ such that:
+         \begin{enumerate}
+            \item $\mc \Gamma; \Delta_{c_1}; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Delta_{c_2}, \Xi_1, ..., \Xi_m; \cdot; C''', f', C''; P; A \com B; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'$ (well-formed in relation to $T$)
+            where $\Delta_{c_1}, \Delta_{c_2} = (\Delta_1, \Delta_2, \Xi) - (\Xi_1, ..., \Xi_m)$ and $\Delta_x = \Delta_{c_2}, \Xi_1, ..., \Xi_m$
+         \end{enumerate}
+         
+      
+      \item With backtracking to a persistent continuation frame in stack $P$ ($C = \cdot$):\\
+      $\exists f = [\Gamma_1, p_2, \Gamma_2; \Delta_{c_1}, \Delta_{c_2}; \Xi_1, ..., \Xi_m; \bang p; \Omega_1, ..., \Omega_k; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_n] \in P$ where $P = P', f, P''$ that turns into $f' = [\Gamma_2; \Delta_{c_1}, \Delta_{c_2}; \Xi_1, ..., \Xi_m; \bang p; \Omega_1, ..., \Omega_k; \Lambda_1, ..., \Lambda_m; \Upsilon_1, ..., \Upsilon_n]$ such that:
+         \begin{enumerate}
+            \item $\mc \Gamma; \Delta_{c_1}; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Delta_{c_2}, \Xi_1, ..., \Xi_m; \cdot; C'; P''', f', P''; A \com B; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'$ (well-formed in relation to $T$) where $\Delta_{c_1}, \Delta_{c_2} = (\Delta_1, \Delta_2, \Xi) - (\Xi_1, ..., \Xi_m)$ and $\Delta_x = \Delta_{c_2}, \Xi_1, ..., \Xi_m$
+         \end{enumerate}
+   \end{enumerate}
+\end{enumerate}
+\end{lemma}
+\begin{proof}
+Proof by mutual induction. See Lemma~\ref{thm:body_match} for details.
+\end{proof}
+
+\subsubsection{Stack Update}
+
+In order to prove that both stacks $C$ and $P$ are usable for the next application of the iteration,
+we need to prove that $C$ will have at most one updated linear continuation frame and $P$ will have
+all its frames updated to account the consumption of the facts from the previous application of the
+comprehension.
+
+We now prove some auxiliary theorems.
+
+\begin{theorem}[Full stack update]\label{thm:stack_update}
+If $\strans \Xi; P; P'$ then $P'$ will be the transformation of stack $P$ where $\forall f = [\Gamma'; \Delta_N; \cdot; \bang p; \Omega; \cdot; \Upsilon] \in P$ will turn into $f' = [\Gamma'; \Delta_N - \Xi; \cdot; \bang p; \Omega; \cdot; \Upsilon]$.
+\end{theorem}
+
+\begin{proof}
+Straightforward induction on the size of $P$.
+\end{proof}
+
+\begin{theorem}[From update to derivation]\label{thm:from_update_to_derivation}
+   If $\dall \Gamma; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi; C; P; A \com B; \Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'$ then
+  $\dc \Gamma; \Xi_N, \Xi; \Gamma_{N1}; \Delta_{N1}; B; C' ; P'; A \com B; \Omega_N; (\Delta_N - \Xi) \rightarrow \Xi'; \Delta'; \Gamma'$, where:
+
+\begin{enumerate}
+   \item If $C = \cdot$ then $C' = \cdot$;
+   \item If $C = C_1, (\Delta_a; \Delta_b; \cdot; p; \Omega; \cdot; \Upsilon)$ then $C' = (\Delta_a - \Xi; \Delta_b - \Xi; \cdot; p; \Omega; \cdot; \Upsilon)$;
+   \item $P'$ is the transformation of stack $P$, where $\forall f = [\Gamma'; \Delta_N; \cdot; \bang p; \Omega; \cdot; \Upsilon] \in P$ will turn into \linebreak $f'=[\Gamma';\Delta_N-\Xi;\cdot;\bang p;\Omega;\cdot;\Upsilon]$.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+Use induction on the size of the stack $C$ to get the result of $C'$ then apply Theorem~\ref{thm:stack_update} to get $P'$.
+\end{proof}
+
+Now we prove that a match of a comprehension's body implies the start of a derivation of the comprehension's head with correct continuation stacks. Note that $\Omega = \cdot$ in $\matchlldc$, so there is nothing left to match.
+
+\begin{lemma}[Match to derivation]
+   If $\mc \Gamma; \Delta; \Xi_N; \Gamma_{N1}; \Delta_{N1}; \Xi; \cdot; B; C; P; A \com B;\Omega_N; \Delta_N \rightarrow \Xi'; \Delta'; \Gamma'$ then
+      $\dc \Gamma; \Xi_N, \Xi; \Gamma_{N1}; \Delta_{N1}; B; C'; P'; A \com B; \Omega_N; (\Delta_N - \Xi) \rightarrow \Xi'; \Delta'; \Gamma'$ where:
+   
+   \begin{enumerate}
+      \item If $C = \cdot$ then $C' = \cdot$;
+      \item If $C = C_1, (\Delta_a; \Delta_b; \cdot; p; \Omega; \cdot; \Upsilon)$ then $C' = (\Delta_a - \Xi; \Delta_b - \Xi; \cdot; p; \Omega; \cdot; \Upsilon)$ then \linebreak $C' = (\Delta_a - \Xi; \Delta_b - \Xi; \cdot; p; \Omega; \cdot; \Upsilon)$;
+      \item $P'$ is the transformation of stack $P$, where $\forall f = [\Gamma'; \Delta_N; \cdot; \bang p; \Omega; \cdot; \Upsilon] \in P$ will turn into \linebreak $f' = [\Gamma'; \Delta_N - \Xi; \cdot; \bang p; \Omega; \cdot; \Upsilon]$.
+   \end{enumerate}
+\end{lemma}
+
+\begin{proof}
+Invert the assumption and then apply Theorem~\ref{thm:from_update_to_derivation}.
+\end{proof}
+
+\subsubsection{Main Comprehension Theorem}

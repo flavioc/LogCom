@@ -6,16 +6,12 @@ Datalog~\cite{Ramakrishnan93asurvey} is very popular logic programming language 
 Datalog interpreters usually employ a technique called \emph{Iterative Fixpoint Evaluation} (IFE) or \emph{semi-na\"{i}ve evaluation}~\cite{Ramakrishnan93asurvey} in order to generate the complete set of facts from the derivation rules. In IFE, computation is performed in iterations. In the first iteration, we consider all the axioms and
 apply all rules that can be applied using the database. Once the database will be updated with the newly derived facts, we apply again all the rules given
 the new database. If a rule is applied with at-least one fact that was derived in the previous iteration, then the facts instantiated by the head of the
-rule can be added to the database. Otherwise, we ignore them since such facts must already been derived before. This is repeated until no new facts are
-added to the database.
+rule can be added to the database. Otherwise, we ignore them since such facts must already been derived before. This is repeated until no new facts are added to the database.
 
 IFE takes advantage of the fact that Datalog is based on Horn clauses~\cite{journals/jsyml/Horn51} and is thus monotonic. When a rule is applied, new information is added to the database but not removed. The database can be implemented efficiently since facts are stored there until the program completes.
 
 We have designed a new forward-chaining logic programming language called Linear Meld (LM). LM is similar to Datalog but uses linear logic~\cite{girard-87} as its foundation. Since linear logic is the \emph{logic of resources}, LM rules may consume facts from the database, which makes IFE impossible to use as
-an evaluation strategy. LM is concurrent because the forward-chaining proof process is done at several places - called \emph{nodes} -
-and derivation of facts may lead to communication between them. The communication paths between nodes and the nodes themselves create
-a graph data structure where computation happens concurrently.
-LM also includes novel features such as comprehensions and aggregates, which allow the programmer to iterate over
+an evaluation strategy. LM is concurrent because the forward-chaining proof process is done at several places - called \emph{nodes} - and derivation of facts may lead to communication between them. The communication paths between nodes and the nodes themselves create a graph data structure where computation happens concurrently. LM also includes novel features such as comprehensions and aggregates, which allow the programmer to iterate over
 or accumulate values from the database, respectively.
 
 In this paper, we want to present an high level dynamic semantics and then a low level dynamic semantics of LM.
