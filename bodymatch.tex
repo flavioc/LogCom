@@ -5,9 +5,10 @@ In order to prove the soundness of matching, we want to reconstitute a valid $\m
 we may fail during matching, therefore our body match lemma needs to handle unsuccessful matches. In order to be able to use induction, we
 must assume a matching proposition $\mo$that already contains some continuation frames in stack $C$ that is well-formed in relation to the rule's body $A$ and initial database.
 
-Our lemma also
-needs to apply to our continuation judgment $\contlld$, because when inverting some of the matching assumptions, we get a continuation
-proposition. Apart from an unsuccessful match, we deal with two situations during a successful match: (1) we succeed without needing to backtrack to a frame in stack $C$ or (2) we need to backtrack to a frame in $C$. The complete lemma is stated and proven below.
+Our lemma also needs to apply to our continuation judgment $\contlld$, because when inverting some of
+the matching assumptions, we get a continuation proposition. Apart from an unsuccessful match, we deal
+with two situations during a successful match: (1) we succeed without needing to backtrack to a frame
+in stack $C$ or (2) we need to backtrack to a frame in $C$. The complete lemma is stated and proven below.
 
 \begin{lemma}[Body match]\label{thm:body_match}
    

@@ -1,0 +1,62 @@
+We are finally ready to prove that the derivation of terms of the head of a rule is sound in relation to HLD.
+
+\begin{lemma}[Head derivation soundness]
+\hspace{0.5cm}\\
+If $\done \Gamma; \Delta_N; \Xi; \Gamma_1; \Delta_1; \Omega \rightarrow \Xi'; \Delta'; \Gamma'$ then $\dz \Gamma; \Delta_N; \Xi; \Gamma_1; \Delta_1; \Omega \rightarrow \Xi'; \Delta'; \Gamma'$.
+\end{lemma}
+
+\begin{proof}\label{sec:derivation_theorem}
+Induction on $\Omega$. Most of the sub-cases can be proven using the induction hypothesis or by
+straightforward rule inference. The sub-case for the comprehensions $A \com B$ is more
+complicated and can be proved by using the comprehension lemma (Lemma~\ref{thm:comprehension}) on $\done \Gamma; \Delta; \Xi; \Gamma_1; \Delta_1; A \com B, \Omega \rightarrow \Xi'; \Delta'; \Gamma'$
+ to get $n$ applications of the comprehension, where for the $i_{th}$ application we get the following:
+
+\begin{itemize}
+   \item $\Xi_{c_i}$: context of consumed linear facts ($\Delta_N = \Delta, \Xi_{c_1}, ..., \Xi_{c_n}$);
+   \item $\Delta_{c_i}$: context of derived linear facts;
+   \item $\Gamma_{c_i}$: context of derived persistent facts;
+   \item if $\dz \Gamma; \Delta, \Xi_{c_n}, \Xi_{c_{i+1}}; \Xi, \Xi_{c_1}, ..., \Xi_{c_i}; \Gamma_{N1}, \Gamma_{c_1}, ..., \Gamma_{c_i}; \Delta_1, \Delta_{c_1}, ..., \Delta_{c_i}; A \com B, \Omega \rightarrow \Xi'; \Delta'; \Gamma'$ then \linebreak $\dz \Gamma; \Delta, \Xi_{c_n}, \Xi_{i_{n+1}}; \Xi, \Xi_{c_1}, ..., \Xi_{c_i}; \Gamma_1, \Gamma_{c_1}, ..., \Gamma_{c_{i-1}}; \Delta_1, \Delta_{c_1}, ..., \Delta_{c_{i-1}}; B, A \com B, \Omega \rightarrow \Xi'; \Delta'; \Gamma'$: the derivation implication.
+\end{itemize}
+
+$\done \Gamma; \Delta; \Xi, \Xi_{c_1}, ..., \Xi_{c_n}; \Gamma_1, \Gamma_{c_1}, ..., \Gamma_{c_n}; \Delta_1, \Delta_{c_1}, ..., \Delta_{c_n}; \Omega \rightarrow \Xi'; \Delta'; \Gamma'$ \hfill (1) from Lemma~\ref{thm:comprehension}
+
+$\dz \Gamma; \Delta; \Xi, \Xi_{c_1}, ..., \Xi_{c_n}; \Gamma_1, \Gamma_{c_1}, ..., \Gamma_{c_n}; \Delta_1, \Delta_{c_1}, ..., \Delta_{c_n}; \Omega \rightarrow \Xi'; \Delta'; \Gamma'$ \hfill (2) i.h. on (1)
+
+$\dz \Gamma; \Delta; \Xi, \Xi_{c_1}, ..., \Xi_{c_n}; \Gamma_1, \Gamma_{c_1}, ..., \Gamma_{c_n}; \Delta_1, \Delta_{c_1}, ..., \Delta_{c_n}; 1, \Omega \rightarrow \Xi'; \Delta'; \Gamma'$ \hfill (3) rule $\dz 1$ on (2)
+
+$\dz \Gamma; \Delta; \Xi, \Xi_{c_1}, ..., \Xi_{c_n}; \Gamma_1, \Gamma_{c_1}, ..., \Gamma_{c_n}; \Delta_1, \Delta_{c_1}, ..., \Delta_{c_n}; 1 \with (A \lolli B \otimes A \com B), \Omega \rightarrow \Xi'; \Delta'; \Gamma'$
+
+... \hfill (4) rule $\dz \with L$ on (3)
+
+
+$\dz \Gamma; \Delta; \Xi, \Xi_{c_1}, ..., \Xi_{c_n}; \Gamma_1, \Gamma_{c_1}, ..., \Gamma_{c_n}; \Delta_1, \Delta_{c_1}, ..., \Delta_{c_n}; A \com B, \Omega \rightarrow \Xi'; \Delta'; \Gamma'$
+
+... \hfill (5) rule $\dz\m{comp}$ on (4)
+
+Using the $n^{th}$ implication of the comprehension lemma on (5):
+
+$\dz \Gamma; \Delta; \Xi, \Xi_{c_1}, ..., \Xi_{c_n}; \Gamma_1, \Gamma_{c_1}, ..., \Gamma_{c_{n-1}}; \Delta_1, \Delta_{c_1}, ..., \Delta_{c_{n-1}}; B, A \com B, \Omega \rightarrow \Xi'; \Delta'; \Gamma'$
+
+... \hfill (6) implication result
+
+Using the $\mz \Xi_n \rightarrow A$ result on (6) with rule $\dz \lolli$:
+
+$\dz \Gamma; \Delta, \Xi_{c_n}; \Xi, \Xi_{c_1}, ..., \Xi_{c_{n-1}}; \Gamma_1, \Gamma_{c_1}, ..., \Gamma_{c_{n-1}}; \Delta_1, \Delta_{c_1}, ..., \Delta_{c_{n-1}}; A \lolli B, A \com B, \Omega \rightarrow \Xi'; \Delta'; \Gamma'$ \hfill (7)
+
+$\dz \Gamma; \Delta, \Xi_{c_n}; \Xi, \Xi_{c_1}, ..., \Xi_{c_{n-1}}; \Gamma_1, \Gamma_{c_1}, ..., \Gamma_{c_{n-1}}; \Delta_1, \Delta_{c_1}, ..., \Delta_{c_{n-1}}; A \lolli B \otimes A \com B, \Omega \rightarrow \Xi'; \Delta'; \Gamma'$
+
+... \hfill (8) rule $\dz \otimes$ on (7)
+
+$\dz \Gamma; \Delta, \Xi_{c_n}; \Xi, \Xi_{c_1}, ..., \Xi_{c_{n-1}}; \Gamma_1, \Gamma_{c_1}, ..., \Gamma_{c_{n-1}}; \Delta_1, \Delta_{c_1}, ..., \Delta_{c_{n-1}}; 1 \with (A \lolli B \otimes A \com B), \Omega \rightarrow \Xi'; \Delta'; \Gamma'$
+
+... \hfill (9) rule $\dz \with R$ on (8)
+
+$\dz \Gamma; \Delta, \Xi_{c_n}; \Xi, \Xi_{c_1}, ..., \Xi_{c_{n-1}}; \Gamma_1, \Gamma_{c_1}, ..., \Gamma_{c_{n-1}}; \Delta_1, \Delta_{c_1}, ..., \Delta_{c_{n-1}}; A \com B, \Omega \rightarrow \Xi'; \Delta'; \Gamma'$
+
+... \hfill (10) rule $\dz \m{comp}$ on (9)
+
+By recursively applying the other $n-1$ comprehensions on (10), we finally get:
+
+$\dz \Gamma; \Delta, \Xi_{c_1}, ..., \Xi_{c_n}; \Delta_1; \Gamma_1; A \com B, \Omega \rightarrow \Xi'; \Delta'; \Gamma'$ \hfill (11)
+
+\end{proof}
